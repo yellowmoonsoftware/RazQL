@@ -24,6 +24,8 @@ The generator validates source existence and build metadata for the built-in res
 </ItemGroup>
 ```
 
+The packaged build target assigns embedded SQL templates a conventional manifest name derived from the project's `RootNamespace` and the template's relative path. An explicitly configured `LogicalName` is preserved, but it must match one of the names expected from the mapper namespace, template location, mapper name, and query name. Namespace, directory, and manifest-name mismatches are reported during compilation.
+
 File-system templates must be `Content`, copied to output, and retain a target path matching the RazQL convention. Inline `RazQLQueryAttribute` templates do not require a file. Custom loaders are not source-validated because their location semantics are application-defined.
 
 The NuGet package installs the generator automatically as an analyzer. Mark the package as private when it should remain an implementation detail of the consuming project:

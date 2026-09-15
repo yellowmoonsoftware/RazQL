@@ -76,13 +76,37 @@ internal static class MapperTemplateSourceValidator
                 method.TemplateSourceLoaderType,
                 knownTypes.ResourceTemplateSourceLoader))
         {
-            return matches.Any(match => IsItemType(match.Source, "EmbeddedResource"))
-                ? null
-                : CreateConfigurationDiagnostic(
+            var embeddedMatches = matches
+                .Where(match => IsItemType(match.Source, "EmbeddedResource"))
+                .ToArray();
+            if (embeddedMatches.Length == 0)
+            {
+                return CreateConfigurationDiagnostic(
                     method,
                     matches[0],
                     "resource loading",
                     $"the build action must be EmbeddedResource, but it is {DescribeItemType(matches)}");
+            }
+
+            var resourceNameCandidates = GetTemplateResourceNameCandidates(mapper, method).ToArray();
+            if (embeddedMatches.Any(match =>
+                    match.Source.ManifestResourceName is { } resourceName &&
+                    resourceNameCandidates.Contains(resourceName, StringComparer.Ordinal)))
+            {
+                return null;
+            }
+
+            var manifestResourceNames = embeddedMatches
+                .Select(match => match.Source.ManifestResourceName ?? "unavailable")
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+
+            return CreateConfigurationDiagnostic(
+                method,
+                embeddedMatches[0],
+                "resource loading",
+                $"manifest resource name must be one of: {string.Join(", ", resourceNameCandidates)}; " +
+                $"configured name is: {string.Join(", ", manifestResourceNames)}");
         }
 
         if (!SymbolEqualityComparer.Default.Equals(
@@ -231,6 +255,32 @@ internal static class MapperTemplateSourceValidator
                     TemplateDirectoryName,
                     groupName,
                     $"{queryName}{TemplateFileSuffix}"))));
+    }
+
+    private static IEnumerable<string> GetTemplateResourceNameCandidates(
+        MapperModel mapper,
+        MapperMethodModel method)
+    {
+        var mapperNamespace = mapper.MapperInterface.ContainingNamespace.IsGlobalNamespace
+            ? null
+            : mapper.MapperInterface.ContainingNamespace.ToDisplayString();
+        var templateLocation = method.TemplateLocation?
+            .Replace('\\', '.')
+            .Replace('/', '.');
+
+        return mapper.QueryGroupNameCandidates.SelectMany(groupName =>
+            method.QueryNameCandidates.Select(queryName =>
+                JoinResourceName(
+                    mapperNamespace,
+                    templateLocation,
+                    TemplateDirectoryName,
+                    groupName,
+                    $"{queryName}{TemplateFileSuffix}")));
+    }
+
+    private static string JoinResourceName(params string?[] parts)
+    {
+        return string.Join(".", parts.OfType<string>().Where(part => part.Length != 0));
     }
 
     private static string NormalizePath(string path)

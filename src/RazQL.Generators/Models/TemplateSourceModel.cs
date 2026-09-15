@@ -11,12 +11,14 @@ internal sealed class TemplateSourceModel
         string path,
         string? itemType,
         string? copyToOutputDirectory,
-        string? targetPath)
+        string? targetPath,
+        string? manifestResourceName)
     {
         Path = path;
         ItemType = itemType;
         CopyToOutputDirectory = copyToOutputDirectory;
         TargetPath = targetPath;
+        ManifestResourceName = manifestResourceName;
     }
 
     public string Path { get; }
@@ -26,6 +28,8 @@ internal sealed class TemplateSourceModel
     public string? CopyToOutputDirectory { get; }
 
     public string? TargetPath { get; }
+
+    public string? ManifestResourceName { get; }
 
     public static TemplateSourceModel From(
         AdditionalText source,
@@ -37,7 +41,8 @@ internal sealed class TemplateSourceModel
             source.Path,
             GetMetadata(options, "RazQLTemplateItemType"),
             GetMetadata(options, "CopyToOutputDirectory"),
-            GetMetadata(options, "TargetPath"));
+            GetMetadata(options, "TargetPath"),
+            GetMetadata(options, "RazQLManifestResourceName"));
     }
 
     private static string? GetMetadata(AnalyzerConfigOptions options, string name)

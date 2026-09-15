@@ -72,6 +72,35 @@ public class MapperTemplateSourceDiagnosticTests
     }
 
     [Fact]
+    public void Generator_ReportsEmbeddedTemplateWithMismatchedManifestResourceName()
+    {
+        var diagnostics = RunGeneratorForSourceWithTemplates(
+            MapperSource,
+            new TemplateFile(
+                "/project/Consumers/SqlTemplates/ArtistMapper/Find.sql.cshtml",
+                "EmbeddedResource",
+                ManifestResourceName: "Different.Root.SqlTemplates.ArtistMapper.Find.sql.cshtml"));
+
+        var diagnostic = Assert.Single(diagnostics, diagnostic => diagnostic.Id == "RAZQL019");
+        Assert.Contains("manifest resource name must be one of", diagnostic.GetMessage());
+        Assert.Contains("Consumers.SqlTemplates.ArtistMapper.Find.sql.cshtml", diagnostic.GetMessage());
+        Assert.Contains("Different.Root.SqlTemplates.ArtistMapper.Find.sql.cshtml", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public void Generator_ReportsEmbeddedTemplateWithoutManifestResourceNameMetadata()
+    {
+        var diagnostics = RunGeneratorForSourceWithTemplates(
+            MapperSource,
+            new TemplateFile(
+                "/project/Consumers/SqlTemplates/ArtistMapper/Find.sql.cshtml",
+                "EmbeddedResource"));
+
+        var diagnostic = Assert.Single(diagnostics, diagnostic => diagnostic.Id == "RAZQL019");
+        Assert.Contains("configured name is: unavailable", diagnostic.GetMessage());
+    }
+
+    [Fact]
     public void Generator_ReportsAmbiguousTemplateSources()
     {
         var diagnostics = RunGenerator(
@@ -652,10 +681,17 @@ public class MapperTemplateSourceDiagnosticTests
         string Path,
         string ItemType,
         string? CopyToOutputDirectory = null,
-        string? TargetPath = null)
+        string? TargetPath = null,
+        string? ManifestResourceName = null)
     {
         public static TemplateFile EmbeddedResource(string path) =>
-            new(path, "EmbeddedResource");
+            new(
+                path,
+                "EmbeddedResource",
+                ManifestResourceName: path
+                    .Replace("/project/", string.Empty)
+                    .Replace('\\', '.')
+                    .Replace('/', '.'));
     }
 
     private sealed class TemplateAnalyzerConfigOptionsProvider(
@@ -694,6 +730,12 @@ public class MapperTemplateSourceDiagnosticTests
             if (template.TargetPath is not null)
             {
                 metadata["build_metadata.AdditionalFiles.TargetPath"] = template.TargetPath;
+            }
+
+            if (template.ManifestResourceName is not null)
+            {
+                metadata["build_metadata.AdditionalFiles.RazQLManifestResourceName"] =
+                    template.ManifestResourceName;
             }
 
             return metadata;

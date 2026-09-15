@@ -10,6 +10,14 @@
                                    MetadataName="CopyToOutputDirectory" />
       <CompilerVisibleItemMetadata Include="AdditionalFiles"
                                    MetadataName="TargetPath" />
+      <CompilerVisibleItemMetadata Include="AdditionalFiles"
+                                   MetadataName="RazQLManifestResourceName" />
+
+      <EmbeddedResource Update="@(EmbeddedResource)"
+                        Condition="'%(EmbeddedResource.Extension)' == '.cshtml' and $([System.String]::Copy('%(EmbeddedResource.Filename)').EndsWith('.sql')) and '%(EmbeddedResource.LogicalName)' == ''">
+        <LogicalName Condition="'$(RootNamespace)' != ''">$(RootNamespace).$([System.String]::Copy('%(EmbeddedResource.TargetPath)').Replace('\', '.').Replace('/', '.'))</LogicalName>
+        <LogicalName Condition="'$(RootNamespace)' == ''">$([System.String]::Copy('%(EmbeddedResource.TargetPath)').Replace('\', '.').Replace('/', '.'))</LogicalName>
+      </EmbeddedResource>
 
       <_RazQLEmbeddedTemplate Include="@(EmbeddedResource)"
                               Condition="'%(EmbeddedResource.Extension)' == '.cshtml' and $([System.String]::Copy('%(EmbeddedResource.Filename)').EndsWith('.sql'))" />
@@ -17,7 +25,8 @@
                             Condition="'%(ContentWithTargetPath.Extension)' == '.cshtml' and $([System.String]::Copy('%(ContentWithTargetPath.Filename)').EndsWith('.sql'))" />
 
       <AdditionalFiles Include="@(_RazQLEmbeddedTemplate)"
-                       RazQLTemplateItemType="EmbeddedResource" />
+                       RazQLTemplateItemType="EmbeddedResource"
+                       RazQLManifestResourceName="%(_RazQLEmbeddedTemplate.LogicalName)" />
       <AdditionalFiles Include="@(_RazQLContentTemplate)"
                        RazQLTemplateItemType="Content" />
     </ItemGroup>
