@@ -11,14 +11,6 @@ internal static class CollectionExtensions
         action(key.Value, dictionary[key.Value], context);
     }
 
-    public static void DoIfExists<TKey, TValue, TContext>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey? key,
-        Action<TKey, TValue, TContext> action, TContext context)
-        where TKey : class
-    {
-        if (key is null) return;
-        action(key, dictionary[key], context);
-    }
-
     public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> factory)
     {
         if (dictionary.TryGetValue(key, out var existingVal)) return existingVal;
