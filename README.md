@@ -6,9 +6,24 @@ The project is being prepared for an initial open source release. No stable NuGe
 
 ## Projects
 
-- `RazQL` contains mapper attributes, template loading and compilation, safe parameter binding, SQL generation, and query execution.
+- `RazQL` is the standard metapackage and installs the runtime together with source generation.
+- `RazQL.Core` contains mapper attributes, template loading and compilation, safe parameter binding, SQL generation, and query execution.
 - `RazQL.Generators` validates mapper interfaces and emits their implementations during compilation.
 - `RazQL.DependencyInjection` registers the runtime pipeline and generated mappers with Microsoft dependency injection.
+
+## Installation
+
+Install the standard package to reference the runtime and activate the generator:
+
+```shell
+dotnet package add RazQL
+```
+
+Add Microsoft dependency-injection integration separately:
+
+```shell
+dotnet package add RazQL.DependencyInjection
+```
 
 ## Mapper Example
 
@@ -68,7 +83,7 @@ dotnet test RazQL.slnx
 
 ## Status
 
-RazQL is a proof of concept moving toward its first public release. Package identity and metadata, compatibility targets, release automation, and packaged-generator verification still need to be finalized.
+RazQL is a proof of concept moving toward its first public release. Package metadata, compatibility targets, and release automation still need to be finalized.
 
 ## License
 

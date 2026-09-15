@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/RazQL.DependencyInjection/RazQL.DependencyInjection.csproj" />
     <Project Path="src/RazQL.Generators/RazQL.Generators.csproj" />
+    <Project Path="src/RazQL.Package/RazQL.Package.csproj" />
     <Project Path="src/RazQL/RazQL.csproj" />
   </Folder>
   <Folder Name="/tests/">

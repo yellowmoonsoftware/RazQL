@@ -1,6 +1,6 @@
-# RazQL
+# RazQL.Core
 
-`RazQL` is the runtime library for generating parameterized SQL from trusted Razor templates and executing it through Dapper.
+`RazQL.Core` is the runtime library for generating parameterized SQL from trusted Razor templates and executing it through Dapper. It is included by the standard `RazQL` package.
 
 ## Core Pipeline
 

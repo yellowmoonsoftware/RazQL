@@ -5,7 +5,8 @@
 This repository contains the RazQL .NET libraries and their tests.
 
 - `RazQL.slnx` includes all production and test projects.
-- `src/RazQL/` contains the runtime library. Consumer-facing types live in the root namespace; `Binding/`, `Execution/`, and `Template/` group their subsystems.
+- `src/RazQL/` contains the runtime assembly packaged as `RazQL.Core`. Consumer-facing types live in the root namespace; `Binding/`, `Execution/`, and `Template/` group their subsystems.
+- `src/RazQL.Package/` produces the dependency-only `RazQL` metapackage used for standard installation.
 - `src/RazQL.Generators/` contains mapper discovery, analysis, validation, and source emission.
 - `src/RazQL.DependencyInjection/` integrates the runtime and generated mappers with Microsoft dependency injection.
 - `tests/` mirrors the three production projects. SQL fixtures live below the relevant test project.
@@ -19,7 +20,7 @@ Use the .NET 10 SDK from the repository root:
 - `dotnet build RazQL.slnx` compiles every project and runs generator diagnostics.
 - `dotnet test RazQL.slnx` runs the complete xUnit suite.
 - `dotnet test tests/RazQL.Tests/RazQL.Tests.csproj --collect:"XPlat Code Coverage"` collects runtime-library coverage.
-- `dotnet pack src/RazQL/RazQL.csproj -c Release` creates a local package for inspection.
+- `dotnet pack RazQL.slnx -c Release` creates all distributable packages for inspection.
 
 ## Coding Style & Naming Conventions
 
