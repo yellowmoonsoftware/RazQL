@@ -1,0 +1,26 @@
+<Project>
+
+  <Target Name="_PrepareRazQLTemplateSourceGenerator"
+          BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun"
+          DependsOnTargets="AssignTargetPaths">
+    <ItemGroup>
+      <CompilerVisibleItemMetadata Include="AdditionalFiles"
+                                   MetadataName="RazQLTemplateItemType" />
+      <CompilerVisibleItemMetadata Include="AdditionalFiles"
+                                   MetadataName="CopyToOutputDirectory" />
+      <CompilerVisibleItemMetadata Include="AdditionalFiles"
+                                   MetadataName="TargetPath" />
+
+      <_RazQLEmbeddedTemplate Include="@(EmbeddedResource)"
+                              Condition="'%(EmbeddedResource.Extension)' == '.cshtml' and $([System.String]::Copy('%(EmbeddedResource.Filename)').EndsWith('.sql'))" />
+      <_RazQLContentTemplate Include="@(ContentWithTargetPath)"
+                            Condition="'%(ContentWithTargetPath.Extension)' == '.cshtml' and $([System.String]::Copy('%(ContentWithTargetPath.Filename)').EndsWith('.sql'))" />
+
+      <AdditionalFiles Include="@(_RazQLEmbeddedTemplate)"
+                       RazQLTemplateItemType="EmbeddedResource" />
+      <AdditionalFiles Include="@(_RazQLContentTemplate)"
+                       RazQLTemplateItemType="Content" />
+    </ItemGroup>
+  </Target>
+
+</Project>

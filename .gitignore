@@ -1,0 +1,27 @@
+# .NET build output and packages
+[Bb]in/
+[Oo]bj/
+artifacts/
+packages/
+TestResults/
+*.nupkg
+*.snupkg
+
+# IDE caches and personal settings
+.vs/
+.idea/
+*.user
+*.suo
+*.sln.docstates
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.Local.json
+*.pfx
+*.p12
+
+# macOS metadata
+.DS_Store

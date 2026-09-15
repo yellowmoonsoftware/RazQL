@@ -1,0 +1,14 @@
+using RazorEngineCore;
+
+namespace RazQL.Template;
+
+/// <summary>Loads, compiles, and caches Razor templates for mapper queries.</summary>
+public interface ITemplateCache
+{
+    /// <summary>Gets the compiled template for a query and criteria type.</summary>
+    /// <typeparam name="TCriteria">The criteria model type expected by the template.</typeparam>
+    /// <param name="descriptor">The mapper query descriptor.</param>
+    /// <param name="cancellationToken">A token that cancels loading or compilation.</param>
+    /// <returns>A task containing the compiled Razor template.</returns>
+    Task<IRazorEngineCompiledTemplate<RazQLModel<TCriteria>>> GetTemplateAsync<TCriteria>(QueryDescriptor descriptor, CancellationToken cancellationToken);
+}
