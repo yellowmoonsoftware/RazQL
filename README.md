@@ -79,6 +79,7 @@ The repository requires the .NET 10 SDK.
 dotnet restore RazQL.slnx
 dotnet build RazQL.slnx
 dotnet test RazQL.slnx
+./eng/test-packages.sh
 ```
 
 ## Status

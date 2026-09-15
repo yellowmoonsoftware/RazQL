@@ -21,6 +21,7 @@ Use the .NET 10 SDK from the repository root:
 - `dotnet test RazQL.slnx` runs the complete xUnit suite.
 - `dotnet test tests/RazQL.Tests/RazQL.Tests.csproj --collect:"XPlat Code Coverage"` collects runtime-library coverage.
 - `dotnet pack RazQL.slnx -c Release` creates all distributable packages for inspection.
+- `./eng/test-packages.sh` packs every distributable project and verifies a clean package-only consumer.
 
 ## Coding Style & Naming Conventions
 

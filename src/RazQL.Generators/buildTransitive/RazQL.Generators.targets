@@ -1,7 +1,7 @@
 <Project>
 
   <Target Name="_PrepareRazQLTemplateSourceGenerator"
-          BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun"
+          BeforeTargets="CreateManifestResourceNames;GenerateMSBuildEditorConfigFileShouldRun"
           DependsOnTargets="AssignTargetPaths">
     <ItemGroup>
       <CompilerVisibleItemMetadata Include="AdditionalFiles"
@@ -15,8 +15,8 @@
 
       <EmbeddedResource Update="@(EmbeddedResource)"
                         Condition="'%(EmbeddedResource.Extension)' == '.cshtml' and $([System.String]::Copy('%(EmbeddedResource.Filename)').EndsWith('.sql')) and '%(EmbeddedResource.LogicalName)' == ''">
-        <LogicalName Condition="'$(RootNamespace)' != ''">$(RootNamespace).$([System.String]::Copy('%(EmbeddedResource.TargetPath)').Replace('\', '.').Replace('/', '.'))</LogicalName>
-        <LogicalName Condition="'$(RootNamespace)' == ''">$([System.String]::Copy('%(EmbeddedResource.TargetPath)').Replace('\', '.').Replace('/', '.'))</LogicalName>
+        <LogicalName Condition="'$(RootNamespace)' != ''">$(RootNamespace).$([System.String]::Copy('%(EmbeddedResource.Identity)').Replace('\', '.').Replace('/', '.'))</LogicalName>
+        <LogicalName Condition="'$(RootNamespace)' == ''">$([System.String]::Copy('%(EmbeddedResource.Identity)').Replace('\', '.').Replace('/', '.'))</LogicalName>
       </EmbeddedResource>
 
       <_RazQLEmbeddedTemplate Include="@(EmbeddedResource)"
