@@ -26,6 +26,12 @@ The generator validates source existence and build metadata for the built-in res
 
 File-system templates must be `Content`, copied to output, and retain a target path matching the RazQL convention. Inline `RazQLQueryAttribute` templates do not require a file. Custom loaders are not source-validated because their location semantics are application-defined.
 
+The NuGet package installs the generator automatically as an analyzer. Mark the package as private when it should remain an implementation detail of the consuming project:
+
+```xml
+<PackageReference Include="RazQL.Generators" Version="..." PrivateAssets="all" />
+```
+
 The packaged `buildTransitive/RazQL.Generators.targets` file exposes matching `.sql.cshtml` items to the generator as `AdditionalFiles`. When referencing this project directly from a source checkout, configure it as an analyzer and import the target explicitly:
 
 ```xml
