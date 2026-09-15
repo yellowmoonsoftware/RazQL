@@ -20,28 +20,31 @@ internal static class ExpressionAndTypeExtensions
         return path;
     }
 
-    public static bool IsOrImplements<TInterface>(this Type? candidate) where TInterface : class
+    extension(Type? candidate)
     {
-        return IsOrImplements(candidate, typeof(TInterface));
-    }
-
-    public static bool IsOrImplements(this Type? candidate, Type? interfaceType)
-    {
-        if (candidate is null || interfaceType is null || !interfaceType.IsInterface)
+        public bool IsOrImplements<TInterface>() where TInterface : class
         {
-            return false;
+            return candidate.IsOrImplements(typeof(TInterface));
         }
 
-        if (!interfaceType.IsGenericTypeDefinition)
+        public bool IsOrImplements(Type? interfaceType)
         {
-            return interfaceType.IsAssignableFrom(candidate);
-        }
+            if (candidate is null || interfaceType is null || !interfaceType.IsInterface)
+            {
+                return false;
+            }
 
-        return candidate.IsGenericType &&
-               candidate.GetGenericTypeDefinition() == interfaceType
-               ||
-               candidate.GetInterfaces().Any(type =>
-                   type.IsGenericType &&
-                   type.GetGenericTypeDefinition() == interfaceType);
+            if (!interfaceType.IsGenericTypeDefinition)
+            {
+                return interfaceType.IsAssignableFrom(candidate);
+            }
+
+            return candidate.IsGenericType &&
+                   candidate.GetGenericTypeDefinition() == interfaceType
+                   ||
+                   candidate.GetInterfaces().Any(type =>
+                       type.IsGenericType &&
+                       type.GetGenericTypeDefinition() == interfaceType);
+        }
     }
 }
