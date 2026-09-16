@@ -1,5 +1,9 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using RazQL;
+using RazQL.Binding;
 using RazQL.Execution;
 using RazQL.Template;
 
@@ -61,6 +65,77 @@ public class RazQLServiceExtensionsTests
     }
 
     [Fact]
+    public void AddRazQL_RegistersBindingFactoriesAndConfiguredImmutableOptions()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<ILogger<SqlGenerator>>(NullLogger<SqlGenerator>.Instance);
+        services.AddSingleton<ILogger<DefaultTemplateCache>>(NullLogger<DefaultTemplateCache>.Instance);
+        services.AddRazQL(builder => builder
+            .ConfigureDataBinding(options => options.WithOrderByDirectionClause(OrderByDirection.Asc, "UP"))
+            .ConfigureDataBinding(options => options.WithOrderByNullsClause(OrderByNulls.Last, "AT END")));
+        using var provider = services.BuildServiceProvider();
+
+        var options = provider.GetRequiredService<DataBinderOptions>();
+        Assert.Same(options, provider.GetRequiredService<DataBinderOptions>());
+        Assert.Equal("UP", options.OrderByDirectionClause[OrderByDirection.Asc]);
+        Assert.Equal("DESC", options.OrderByDirectionClause[OrderByDirection.Desc]);
+        Assert.Equal("AT END", options.OrderByNullsClause[OrderByNulls.Last]);
+        Assert.IsType<DefaultDataBinderContextFactory>(provider.GetRequiredService<IDataBinderContextFactory>());
+        Assert.IsType<DefaultParameterNameProviderFactory>(provider.GetRequiredService<IParameterNameProviderFactory>());
+        Assert.IsType<SqlGenerator>(provider.GetRequiredService<ISqlGenerator>());
+    }
+
+    [Fact]
+    public void ConfigureDataBinding_AcceptsExistingOptions()
+    {
+        var options = new DataBinderOptions(
+            new Dictionary<OrderByDirection, string> { [OrderByDirection.Asc] = "UP" },
+            DataBinderOptions.DefaultOrderByNullsClause);
+        var services = new ServiceCollection();
+        services.AddRazQL(builder => builder.ConfigureDataBinding(options));
+        using var provider = services.BuildServiceProvider();
+
+        var registeredOptions = provider.GetRequiredService<DataBinderOptions>();
+        Assert.Equal("UP", registeredOptions.OrderByDirectionClause[OrderByDirection.Asc]);
+        Assert.False(registeredOptions.OrderByDirectionClause.ContainsKey(OrderByDirection.Desc));
+    }
+
+    [Fact]
+    public void ConfigureDataBinding_AcceptsOptionsBoundFromConfiguration()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["DataBinder:OrderByDirectionClause:Asc"] = "UP"
+            })
+            .Build();
+        var options = configuration.GetSection("DataBinder").Get<DataBinderOptions>();
+        Assert.NotNull(options);
+        var services = new ServiceCollection();
+        services.AddRazQL(builder => builder.ConfigureDataBinding(options));
+        using var provider = services.BuildServiceProvider();
+
+        var registered = provider.GetRequiredService<DataBinderOptions>();
+        Assert.Equal("UP", registered.OrderByDirectionClause[OrderByDirection.Asc]);
+        Assert.Equal("DESC", registered.OrderByDirectionClause[OrderByDirection.Desc]);
+    }
+
+    [Fact]
+    public void BindingFactoryOverrides_ReplaceDefaultRegistrations()
+    {
+        var services = new ServiceCollection();
+        services.AddRazQL(builder => builder
+            .WithDataBinderContextFactory<ReplacementDataBinderContextFactory>()
+            .WithParameterNameProviderFactory<ReplacementParameterNameProviderFactory>());
+        using var provider = services.BuildServiceProvider();
+
+        Assert.IsType<ReplacementDataBinderContextFactory>(
+            provider.GetRequiredService<IDataBinderContextFactory>());
+        Assert.IsType<ReplacementParameterNameProviderFactory>(
+            provider.GetRequiredService<IParameterNameProviderFactory>());
+    }
+
+    [Fact]
     public void AddMappersFromAssembly_RegistersGeneratedMappersAndPreloadersAsSharedSingletons()
     {
         var services = new ServiceCollection();
@@ -117,4 +192,15 @@ public sealed class TestQueryExecutor : IQueryExecutor
         TCriteria criteria,
         CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
+}
+
+public sealed class ReplacementDataBinderContextFactory : IDataBinderContextFactory
+{
+    public DataBinderContext<TCriteria> Create<TCriteria>(TCriteria criteria) =>
+        throw new NotSupportedException();
+}
+
+public sealed class ReplacementParameterNameProviderFactory : IParameterNameProviderFactory
+{
+    public IParameterNameProvider Create() => throw new NotSupportedException();
 }

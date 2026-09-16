@@ -1,4 +1,5 @@
 using System.Reflection;
+using RazQL.Binding;
 using RazQL.Execution;
 using RazQL.Template;
 
@@ -41,4 +42,24 @@ public interface IRazQLBuilder
     /// <param name="assembly">The assembly containing generated mapper registration attributes.</param>
     /// <returns>This builder.</returns>
     IRazQLBuilder AddMappersFromAssembly(Assembly assembly);
+
+    /// <summary>Configures immutable data-binder options before services are registered.</summary>
+    /// <param name="builderAction">An action that customizes SQL clause mappings.</param>
+    /// <returns>This builder.</returns>
+    IRazQLBuilder ConfigureDataBinding(Action<IDataBinderOptionsBuilder> builderAction);
+
+    /// <summary>Applies an existing immutable data-binder options value.</summary>
+    /// <param name="options">The options to apply.</param>
+    /// <returns>This builder.</returns>
+    IRazQLBuilder ConfigureDataBinding(DataBinderOptions options);
+
+    /// <summary>Replaces the default singleton data-binder context factory.</summary>
+    /// <typeparam name="T">The factory implementation.</typeparam>
+    /// <returns>This builder.</returns>
+    IRazQLBuilder WithDataBinderContextFactory<T>() where T : IDataBinderContextFactory;
+
+    /// <summary>Replaces the default singleton parameter-name provider factory.</summary>
+    /// <typeparam name="T">The factory implementation.</typeparam>
+    /// <returns>This builder.</returns>
+    IRazQLBuilder WithParameterNameProviderFactory<T>() where T : IParameterNameProviderFactory;
 }

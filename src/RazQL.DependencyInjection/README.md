@@ -20,7 +20,7 @@ services.AddRazQL(builder =>
     builder.AddMappersFromAssembly(typeof(IArtistMapper).Assembly));
 ```
 
-`AddRazQL` registers the Razor engine, template cache, SQL generator, query executor, Dapper adapter, built-in template source loaders, and loader resolver as singletons. Generated mapper implementations are registered against their mapper interfaces and as `IMapperTemplatePreloader` instances.
+`AddRazQL` registers the Razor engine, template cache, SQL generator, query executor, Dapper adapter, data-binder factories, immutable data-binder options, built-in template source loaders, and loader resolver as singletons. Generated mapper implementations are registered against their mapper interfaces and as `IMapperTemplatePreloader` instances.
 
 Applications using `ILogger<T>` registrations supplied by a .NET host can observe template compilation and generated-SQL diagnostics.
 
@@ -35,6 +35,15 @@ services.AddRazQL(builder => builder
     .AddTemplateSourceLoader<ApiTemplateSourceLoader>()
     .AddMappersFromAssembly(typeof(IArtistMapper).Assembly));
 ```
+
+Configure trusted `ORDER BY` fragments during registration:
+
+```csharp
+services.AddRazQL(builder => builder.ConfigureDataBinding(options => options
+    .WithOrderByDirectionClause(OrderByDirection.Asc, "ASC")));
+```
+
+The completed `DataBinderOptions` is an immutable singleton. Each query gets a new binder, parameter collection, and parameter-name provider. You can also bind `DataBinderOptions` from `IConfiguration` and pass the result to `ConfigureDataBinding(options)`. The builder can replace `IDataBinderContextFactory` or `IParameterNameProviderFactory`.
 
 All RazQL services and loaders are registered as singletons. Implementations must therefore be thread-safe and must not depend on scoped services.
 

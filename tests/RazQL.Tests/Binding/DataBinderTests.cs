@@ -244,14 +244,13 @@ public class DataBinderTests
     [Fact]
     public void Select_PreservesCustomOptionsInChildBinder()
     {
-        var options = new DataBinderOptions
-        {
-            OrderByDirectionClause = new Dictionary<OrderByDirection, string>
+        var options = new DataBinderOptions(
+            new Dictionary<OrderByDirection, string>
             {
                 [OrderByDirection.Asc] = "UP",
                 [OrderByDirection.Desc] = "DOWN"
-            }
-        };
+            },
+            DataBinderOptions.DefaultOrderByNullsClause);
         var nameProvider = Substitute.For<IParameterNameProvider>();
         var expressionCache = Substitute.For<IExpressionCache>();
         expressionCache.GetMemberAndDelegate(
@@ -315,8 +314,8 @@ public class DataBinderTests
         DataBinderOptions? options = null) =>
         new(model, parameters ?? new DynamicParameters(),
             nameProvider ?? Substitute.For<IParameterNameProvider>(),
-            expressionCache ?? Substitute.For<IExpressionCache>(),
-            options ?? DataBinderOptions.Default);
+            options ?? new DataBinderOptions(),
+            expressionCache ?? Substitute.For<IExpressionCache>());
 }
 
 public sealed class BindingModel

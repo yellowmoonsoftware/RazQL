@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using RazorEngineCore;
+using RazQL.Binding;
 using RazQL.Execution;
 using RazQL.Template;
 
@@ -37,6 +38,12 @@ public static class RazQLServiceExtensions
                 services.AddSingleton(templateSourceLoader);
                 services.AddSingleton(typeof(ITemplateSourceLoader), p => p.GetRequiredService(templateSourceLoader));
             }
+
+            // Configure DataBinderOptions
+            var dataBinderOptionsBuilder = new DataBinderOptionsBuilder();
+            razQLBuilder.DataBinderOptionsBuilderAction?.Invoke(dataBinderOptionsBuilder);
+            services.AddSingleton(dataBinderOptionsBuilder.Build());
+
             return services;
         }
     }
@@ -49,6 +56,8 @@ public static class RazQLServiceExtensions
                 new ServiceDescriptor(typeof(ISqlGenerator), typeof(SqlGenerator), ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(IQueryExecutor), typeof(QueryExecutor), ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(IDapperExecutor), typeof(DapperExecutor), ServiceLifetime.Singleton),
+                new ServiceDescriptor(typeof(IDataBinderContextFactory), typeof(DefaultDataBinderContextFactory), ServiceLifetime.Singleton),
+                new ServiceDescriptor(typeof(IParameterNameProviderFactory), typeof(DefaultParameterNameProviderFactory), ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(ITemplateSourceLoaderResolver), typeof(DefaultTemplateSourceLoaderResolver), ServiceLifetime.Singleton)
             }.ToDictionary(sd => sd.ServiceType);
 
@@ -59,6 +68,8 @@ public static class RazQLServiceExtensions
         };
 
         internal IDictionary<Type, Type> MapperImplementations { get; } = new Dictionary<Type, Type>();
+
+        internal Action<IDataBinderOptionsBuilder>? DataBinderOptionsBuilderAction { get; private set; }
 
         private void AddService(ServiceDescriptor serviceDescriptor) => ServiceDescriptors[serviceDescriptor.ServiceType] = serviceDescriptor;
 
@@ -110,5 +121,30 @@ public static class RazQLServiceExtensions
             return this;
         }
 
+        public IRazQLBuilder WithDataBinderContextFactory<T>() where T : IDataBinderContextFactory
+        {
+            AddService(new ServiceDescriptor(typeof(IDataBinderContextFactory), typeof(T), ServiceLifetime.Singleton));
+            return this;
+        }
+
+        public IRazQLBuilder WithParameterNameProviderFactory<T>() where T : IParameterNameProviderFactory
+        {
+            AddService(new ServiceDescriptor(typeof(IParameterNameProviderFactory), typeof(T), ServiceLifetime.Singleton));
+            return this;
+        }
+
+        public IRazQLBuilder ConfigureDataBinding(Action<IDataBinderOptionsBuilder> builderAction)
+        {
+            ArgumentNullException.ThrowIfNull(builderAction);
+            DataBinderOptionsBuilderAction += builderAction;
+            return this;
+        }
+
+        public IRazQLBuilder ConfigureDataBinding(DataBinderOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            ConfigureDataBinding(builder => builder.WithOptions(options));
+            return this;
+        }
     }
 }

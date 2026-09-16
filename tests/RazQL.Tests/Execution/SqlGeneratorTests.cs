@@ -16,11 +16,15 @@ public class SqlGeneratorTests
         var templateCache = Substitute.For<ITemplateCache>();
         var template = Substitute.For<IRazorEngineCompiledTemplate<RazQLModel<SqlCriteria>>>();
         var logger = Substitute.For<ILogger<SqlGenerator>>();
+        var bindingFactory = Substitute.For<IDataBinderContextFactory>();
+        var binder = Substitute.For<IDataBinder<SqlCriteria>>();
+        var parameters = new Dapper.DynamicParameters();
         var descriptor = CreateDescriptor();
         var criteria = new SqlCriteria { Name = "Petty" };
         using var cancellation = new CancellationTokenSource();
         RazQLModel<SqlCriteria>? initializedModel = null;
         templateCache.GetTemplateAsync<SqlCriteria>(descriptor, cancellation.Token).Returns(template);
+        bindingFactory.Create(criteria).Returns(new DataBinderContext<SqlCriteria>(binder, parameters));
         template.RunAsync(Arg.Any<Action<RazQLModel<SqlCriteria>>>())
             .Returns(callInfo =>
             {
@@ -33,13 +37,14 @@ public class SqlGeneratorTests
                 initializedModel = model;
                 return Task.FromResult("rendered sql");
             });
-        var generator = new SqlGenerator(templateCache, logger);
+        var generator = new SqlGenerator(templateCache, bindingFactory, logger);
 
-        var (sql, parameters) = await generator.ApplyCriteriaAsync(descriptor, criteria, cancellation.Token);
+        var (sql, returnedParameters) = await generator.ApplyCriteriaAsync(descriptor, criteria, cancellation.Token);
 
         Assert.Equal("rendered sql", sql);
-        Assert.Empty(parameters.ParameterNames);
-        Assert.IsType<DataBinder<SqlCriteria>>(initializedModel?.Model);
+        Assert.Same(binder, initializedModel?.Model);
+        Assert.Same(parameters, returnedParameters);
+        bindingFactory.Received(1).Create(criteria);
         await templateCache.Received(1).GetTemplateAsync<SqlCriteria>(descriptor, cancellation.Token);
         await template.Received(1).RunAsync(Arg.Any<Action<RazQLModel<SqlCriteria>>>());
     }

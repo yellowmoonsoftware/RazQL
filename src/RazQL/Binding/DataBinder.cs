@@ -10,23 +10,22 @@ namespace RazQL.Binding;
 /// <param name="model">The criteria model.</param>
 /// <param name="parameters">The Dapper parameter collection populated by binding operations.</param>
 /// <param name="paramNameProvider">The parameter-name provider for this binding scope.</param>
-/// <param name="exprCache">The cache used to compile selector expressions.</param>
 /// <param name="options">Options controlling generated SQL fragments.</param>
+/// <param name="exprCache">The cache used to compile selector expressions.</param>
 public sealed class DataBinder<TModel>(
     TModel model,
     DynamicParameters parameters,
     IParameterNameProvider paramNameProvider,
-    IExpressionCache exprCache,
-    DataBinderOptions options) : IDataBinder<TModel>
+    DataBinderOptions options,
+    IExpressionCache exprCache) : IDataBinder<TModel>
 {
     /// <summary>Creates a binder using the default expression cache.</summary>
     /// <param name="model">The criteria model.</param>
     /// <param name="parameters">The Dapper parameter collection populated by binding operations.</param>
     /// <param name="paramNameProvider">The parameter-name provider for this binding scope.</param>
-    /// <param name="options">Options controlling generated SQL fragments, or <see langword="null"/> for defaults.</param>
+    /// <param name="options">The immutable options controlling generated SQL fragments.</param>
     public DataBinder(TModel model, DynamicParameters parameters, IParameterNameProvider paramNameProvider,
-        DataBinderOptions? options = null) : this(model, parameters, paramNameProvider, new ExpressionCache(),
-        options ?? DataBinderOptions.Default)
+        DataBinderOptions options) : this(model, parameters, paramNameProvider, options, new ExpressionCache())
     {
     }
 
