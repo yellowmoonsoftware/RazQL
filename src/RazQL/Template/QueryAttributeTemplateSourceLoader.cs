@@ -3,7 +3,7 @@ using System.Reflection;
 namespace RazQL.Template;
 
 /// <summary>Loads inline template source from <see cref="RazQLQueryAttribute"/>.</summary>
-public class QueryAttributeTemplateSourceLoader : ITemplateSourceLoader
+public sealed class QueryAttributeTemplateSourceLoader : ITemplateSourceLoader
 {
     /// <inheritdoc />
     public Task<string> LoadAsync(QueryDescriptor queryDescriptor, CancellationToken cancellationToken)

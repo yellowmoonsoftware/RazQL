@@ -8,7 +8,7 @@ namespace RazQL.Execution;
 /// <param name="dataSource">The provider-specific database data source.</param>
 /// <param name="sqlGenerator">The SQL generator.</param>
 /// <param name="dapperExecutor">The Dapper operation adapter.</param>
-public class QueryExecutor(
+public sealed class QueryExecutor(
     DbDataSource dataSource,
     ISqlGenerator sqlGenerator,
     IDapperExecutor dapperExecutor) : IQueryExecutor

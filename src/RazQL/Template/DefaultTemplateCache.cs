@@ -8,7 +8,7 @@ namespace RazQL.Template;
 /// <param name="razorEngine">The Razor engine used to compile template source.</param>
 /// <param name="resolver">The resolver used to select a source loader.</param>
 /// <param name="logger">The logger used for compilation diagnostics.</param>
-public class DefaultTemplateCache(IRazorEngine razorEngine, ITemplateSourceLoaderResolver resolver, ILogger<DefaultTemplateCache> logger) : ITemplateCache
+public sealed class DefaultTemplateCache(IRazorEngine razorEngine, ITemplateSourceLoaderResolver resolver, ILogger<DefaultTemplateCache> logger) : ITemplateCache
 {
     private readonly ConcurrentDictionary<QueryDescriptor, Task<object>> _templates = new();
 

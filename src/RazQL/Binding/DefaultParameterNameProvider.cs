@@ -3,7 +3,7 @@ using RazQL.Internal;
 namespace RazQL.Binding;
 
 /// <summary>Provides the default stable, unique, and nested SQL parameter naming behavior.</summary>
-public class DefaultParameterNameProvider : IParameterNameProvider
+public sealed class DefaultParameterNameProvider : IParameterNameProvider
 {
     enum NameRegistrationType
     {

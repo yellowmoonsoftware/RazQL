@@ -5,7 +5,7 @@ using RazQL.Internal;
 namespace RazQL.Binding;
 
 /// <summary>Provides the default thread-safe cache for compiled model expressions.</summary>
-public class ExpressionCache : IExpressionCache
+public sealed class ExpressionCache : IExpressionCache
 {
     private record CachedMemberSelector(string MemberName, Delegate CompiledSelector);
 

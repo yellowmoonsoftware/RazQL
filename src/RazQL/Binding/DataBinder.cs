@@ -12,7 +12,7 @@ namespace RazQL.Binding;
 /// <param name="paramNameProvider">The parameter-name provider for this binding scope.</param>
 /// <param name="exprCache">The cache used to compile selector expressions.</param>
 /// <param name="options">Options controlling generated SQL fragments.</param>
-public class DataBinder<TModel>(
+public sealed class DataBinder<TModel>(
     TModel model,
     DynamicParameters parameters,
     IParameterNameProvider paramNameProvider,

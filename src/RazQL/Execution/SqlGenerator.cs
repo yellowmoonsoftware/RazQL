@@ -8,7 +8,7 @@ namespace RazQL.Execution;
 /// <summary>Default SQL generator that evaluates compiled Razor templates against a data binder.</summary>
 /// <param name="templateCache">The compiled-template cache.</param>
 /// <param name="logger">The logger used for generated SQL diagnostics.</param>
-public class SqlGenerator(ITemplateCache templateCache, ILogger<SqlGenerator> logger) : ISqlGenerator
+public sealed class SqlGenerator(ITemplateCache templateCache, ILogger<SqlGenerator> logger) : ISqlGenerator
 {
     /// <inheritdoc />
     public async Task<(string sql, DynamicParameters @params)> ApplyCriteriaAsync<TCriteria>(QueryDescriptor descriptor, TCriteria criteria, CancellationToken cancellationToken = default)
