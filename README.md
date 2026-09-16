@@ -6,8 +6,9 @@ The project is being prepared for an initial open source release. No stable NuGe
 
 ## Projects
 
-- `RazQL` is the standard metapackage and installs the runtime together with source generation.
-- `RazQL.Core` contains mapper attributes, template loading and compilation, safe parameter binding, SQL generation, and query execution.
+- `RazQL` is the standard metapackage and installs the runtime, source generation, and Dapper adapter.
+- `RazQL.Core` contains mapper attributes, template loading and compilation, safe parameter binding, SQL generation, and query execution contracts without a Dapper dependency.
+- `RazQL.Dapper` provides the Dapper execution adapter and parameter conversion.
 - `RazQL.Generators` validates mapper interfaces and emits their implementations during compilation.
 - `RazQL.DependencyInjection` registers the runtime pipeline and generated mappers with Microsoft dependency injection.
 
@@ -52,12 +53,17 @@ from artist
 where id = @Model.Bind()
 ```
 
-Register the generated mapper and a provider-specific `DbDataSource`:
+Register the generated mapper, select the Dapper adapter, and supply a provider-specific `DbDataSource`:
 
 ```csharp
-services.AddRazQL(builder =>
-    builder.AddMappersFromAssembly(typeof(IArtistMapper).Assembly));
+using RazQL.Dapper;
+
+services.AddRazQL(builder => builder
+    .UsingExecutionAdapter<DapperExecutionAdapter>()
+    .AddMappersFromAssembly(typeof(IArtistMapper).Assembly));
 ```
+
+Applications using another execution adapter can reference `RazQL.Core`, `RazQL.Generators`, and `RazQL.DependencyInjection` directly without installing Dapper.
 
 Template values should be emitted through `Bind`, `BindAsArray`, and the other data-binder helpers. Razor template source is compiled and executed as .NET code and must therefore be treated as trusted application code.
 

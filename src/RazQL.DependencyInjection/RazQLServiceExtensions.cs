@@ -14,12 +14,17 @@ public static class RazQLServiceExtensions
     extension(IServiceCollection services)
     {
         /// <summary>Adds RazQL services, source loaders, and optionally generated mappers.</summary>
-        /// <param name="builderAction">An optional callback that customizes registrations.</param>
+        /// <param name="builderAction">Configures the required execution adapter and optional registrations.</param>
         /// <returns>The service collection.</returns>
         public IServiceCollection AddRazQL(Action<IRazQLBuilder>? builderAction = null)
         {
             var razQLBuilder = new RazQLBuilder();
             builderAction?.Invoke(razQLBuilder);
+            if (!razQLBuilder.ServiceDescriptors.ContainsKey(typeof(IExecutionAdapter)))
+            {
+                throw new InvalidOperationException(
+                    "An execution adapter must be configured with UsingExecutionAdapter<T>() before registering RazQL services.");
+            }
 
             services.TryAddSingleton<IRazorEngine>(_ => new RazorEngine());
 
@@ -55,7 +60,6 @@ public static class RazQLServiceExtensions
                 new ServiceDescriptor(typeof(ITemplateCache), typeof(DefaultTemplateCache), ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(ISqlGenerator), typeof(SqlGenerator), ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(IQueryExecutor), typeof(QueryExecutor), ServiceLifetime.Singleton),
-                new ServiceDescriptor(typeof(IDapperExecutor), typeof(DapperExecutor), ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(IDataBinderContextFactory), typeof(DefaultDataBinderContextFactory), ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(IParameterNameProviderFactory), typeof(DefaultParameterNameProviderFactory), ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(ITemplateSourceLoaderResolver), typeof(DefaultTemplateSourceLoaderResolver), ServiceLifetime.Singleton)
@@ -91,9 +95,9 @@ public static class RazQLServiceExtensions
             return this;
         }
 
-        public IRazQLBuilder WithDapperExecutor<T>() where T : IDapperExecutor
+        public IRazQLBuilder UsingExecutionAdapter<T>() where T : IExecutionAdapter
         {
-            AddService(new ServiceDescriptor(typeof(IDapperExecutor), typeof(T), ServiceLifetime.Singleton));
+            AddService(new ServiceDescriptor(typeof(IExecutionAdapter), typeof(T), ServiceLifetime.Singleton));
             return this;
         }
 

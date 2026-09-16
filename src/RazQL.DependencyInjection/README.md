@@ -14,13 +14,16 @@ dotnet package add RazQL.DependencyInjection
 Register a provider-specific `DbDataSource`, then add RazQL and the assembly containing generated mappers:
 
 ```csharp
+using RazQL.Dapper;
+
 services.AddSingleton<DbDataSource>(providerSpecificDataSource);
 
-services.AddRazQL(builder =>
-    builder.AddMappersFromAssembly(typeof(IArtistMapper).Assembly));
+services.AddRazQL(builder => builder
+    .UsingExecutionAdapter<DapperExecutionAdapter>()
+    .AddMappersFromAssembly(typeof(IArtistMapper).Assembly));
 ```
 
-`AddRazQL` registers the Razor engine, template cache, SQL generator, query executor, Dapper adapter, data-binder factories, immutable data-binder options, built-in template source loaders, and loader resolver as singletons. Generated mapper implementations are registered against their mapper interfaces and as `IMapperTemplatePreloader` instances.
+`AddRazQL` requires an execution adapter selected in its builder action. It registers the Razor engine, template cache, SQL generator, query executor, data-binder factories, immutable data-binder options, built-in template source loaders, and loader resolver as singletons. Generated mapper implementations are registered against their mapper interfaces and as `IMapperTemplatePreloader` instances.
 
 Applications using `ILogger<T>` registrations supplied by a .NET host can observe template compilation and generated-SQL diagnostics.
 
@@ -32,6 +35,7 @@ The builder provides explicit replacements for each runtime service:
 services.AddRazQL(builder => builder
     .WithTemplateCache<CustomTemplateCache>()
     .WithQueryExecutor<CustomQueryExecutor>()
+    .UsingExecutionAdapter<CustomExecutionAdapter>()
     .AddTemplateSourceLoader<ApiTemplateSourceLoader>()
     .AddMappersFromAssembly(typeof(IArtistMapper).Assembly));
 ```
@@ -39,8 +43,10 @@ services.AddRazQL(builder => builder
 Configure trusted `ORDER BY` fragments during registration:
 
 ```csharp
-services.AddRazQL(builder => builder.ConfigureDataBinding(options => options
-    .WithOrderByDirectionClause(OrderByDirection.Asc, "ASC")));
+services.AddRazQL(builder => builder
+    .UsingExecutionAdapter<DapperExecutionAdapter>()
+    .ConfigureDataBinding(options => options
+        .WithOrderByDirectionClause(OrderByDirection.Asc, "ASC")));
 ```
 
 The completed `DataBinderOptions` is an immutable singleton. Each query gets a new binder, parameter collection, and parameter-name provider. You can also bind `DataBinderOptions` from `IConfiguration` and pass the result to `ConfigureDataBinding(options)`. The builder can replace `IDataBinderContextFactory` or `IParameterNameProviderFactory`.

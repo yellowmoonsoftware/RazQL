@@ -1,30 +1,29 @@
 using System.Linq.Expressions;
 using System.Text;
 using RazQL.Internal;
-using Dapper;
 
 namespace RazQL.Binding;
 
 /// <summary>Default implementation of template model inspection and SQL parameter binding.</summary>
 /// <typeparam name="TModel">The type of criteria model being bound.</typeparam>
 /// <param name="model">The criteria model.</param>
-/// <param name="parameters">The Dapper parameter collection populated by binding operations.</param>
+/// <param name="parameters">The parameter bag populated by binding operations.</param>
 /// <param name="paramNameProvider">The parameter-name provider for this binding scope.</param>
 /// <param name="options">Options controlling generated SQL fragments.</param>
 /// <param name="exprCache">The cache used to compile selector expressions.</param>
 public sealed class DataBinder<TModel>(
     TModel model,
-    DynamicParameters parameters,
+    IParameterBag parameters,
     IParameterNameProvider paramNameProvider,
     DataBinderOptions options,
     IExpressionCache exprCache) : IDataBinder<TModel>
 {
     /// <summary>Creates a binder using the default expression cache.</summary>
     /// <param name="model">The criteria model.</param>
-    /// <param name="parameters">The Dapper parameter collection populated by binding operations.</param>
+    /// <param name="parameters">The parameter bag populated by binding operations.</param>
     /// <param name="paramNameProvider">The parameter-name provider for this binding scope.</param>
     /// <param name="options">The immutable options controlling generated SQL fragments.</param>
-    public DataBinder(TModel model, DynamicParameters parameters, IParameterNameProvider paramNameProvider,
+    public DataBinder(TModel model, IParameterBag parameters, IParameterNameProvider paramNameProvider,
         DataBinderOptions options) : this(model, parameters, paramNameProvider, options, new ExpressionCache())
     {
     }
@@ -33,17 +32,18 @@ public sealed class DataBinder<TModel>(
     public string BindAsArray<TValue>(Expression<Func<TModel, ICollection<TValue>?>> selector,
         NullCollectionBinding nullCollectionBinding = NullCollectionBinding.AsNull)
     {
-        var (name, getter) = exprCache.GetMemberAndDelegate(selector);
+        var (name, @delegate) = exprCache.GetMemberAndDelegate(selector);
         var paramName = paramNameProvider.GetStableName(nullCollectionBinding == NullCollectionBinding.AsEmptyArray
             ? $"{name}_orempty"
             : name);
 
-        if (!parameters.ParameterNames.Contains(paramName))
+        parameters.AddIfAbsent(paramName, (args) =>
         {
-            var boundValue = getter(model)?.ToArray();
-            parameters.Add(paramName,
-                boundValue is null && nullCollectionBinding == NullCollectionBinding.AsEmptyArray ? [] : boundValue);
-        }
+            var (getter, m, bindingOption) = args;
+            var boundValue = getter(m)?.ToArray();
+            return boundValue is null && bindingOption == NullCollectionBinding.AsEmptyArray ? [] : boundValue;
+        }, (@delegate, model, nullCollectionBinding));
+
         return $"@{paramName}";
     }
 
@@ -52,10 +52,7 @@ public sealed class DataBinder<TModel>(
     {
         var (name, getter) = exprCache.GetMemberAndDelegate(selector);
         var paramName = paramNameProvider.GetStableName(name);
-        if (!parameters.ParameterNames.Contains(paramName))
-        {
-            parameters.Add(paramName, getter(model));
-        }
+        parameters.AddIfAbsent(paramName, getter, model);
         return $"@{paramName}";
     }
 

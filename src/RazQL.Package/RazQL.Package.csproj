@@ -14,6 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="../RazQL/RazQL.csproj" PrivateAssets="none" />
     <ProjectReference Include="../RazQL.Generators/RazQL.Generators.csproj" PrivateAssets="none" />
+    <ProjectReference Include="../RazQL.Dapper/RazQL.Dapper.csproj" PrivateAssets="none" />
   </ItemGroup>
 
   <ItemGroup>

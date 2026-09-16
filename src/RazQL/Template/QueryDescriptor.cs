@@ -69,7 +69,7 @@ public sealed record QueryDescriptor
     /// <summary>Gets the method's criteria type.</summary>
     public Type CriteriaType { get; }
 
-    /// <summary>Gets the individual result type mapped by Dapper.</summary>
+    /// <summary>Gets the individual result type mapped by the execution provider.</summary>
     public Type ResultType { get; }
 
     /// <summary>Gets the result cardinality shape used for execution.</summary>

@@ -18,7 +18,7 @@ public class SqlGeneratorTests
         var logger = Substitute.For<ILogger<SqlGenerator>>();
         var bindingFactory = Substitute.For<IDataBinderContextFactory>();
         var binder = Substitute.For<IDataBinder<SqlCriteria>>();
-        var parameters = new Dapper.DynamicParameters();
+        var parameters = Substitute.For<IParameterBag>();
         var descriptor = CreateDescriptor();
         var criteria = new SqlCriteria { Name = "Petty" };
         using var cancellation = new CancellationTokenSource();
@@ -39,11 +39,11 @@ public class SqlGeneratorTests
             });
         var generator = new SqlGenerator(templateCache, bindingFactory, logger);
 
-        var (sql, returnedParameters) = await generator.ApplyCriteriaAsync(descriptor, criteria, cancellation.Token);
+        var result = await generator.ApplyCriteriaAsync(descriptor, criteria, cancellation.Token);
 
-        Assert.Equal("rendered sql", sql);
+        Assert.Equal("rendered sql", result.Sql);
         Assert.Same(binder, initializedModel?.Model);
-        Assert.Same(parameters, returnedParameters);
+        Assert.Same(parameters, result.Parameters);
         bindingFactory.Received(1).Create(criteria);
         await templateCache.Received(1).GetTemplateAsync<SqlCriteria>(descriptor, cancellation.Token);
         await template.Received(1).RunAsync(Arg.Any<Action<RazQLModel<SqlCriteria>>>());

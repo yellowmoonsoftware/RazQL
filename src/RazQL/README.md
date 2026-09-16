@@ -1,6 +1,6 @@
 # RazQL.Core
 
-`RazQL.Core` is the runtime library for generating parameterized SQL from trusted Razor templates and executing it through Dapper. It is included by the standard `RazQL` package.
+`RazQL.Core` is the provider-neutral runtime library for generating parameterized SQL from trusted Razor templates. It is included by the standard `RazQL` package. Dapper execution is provided separately by `RazQL.Dapper`.
 
 ## Core Pipeline
 
@@ -8,8 +8,8 @@ A `QueryDescriptor` identifies a mapper method, its criteria and result types, r
 
 1. Resolves source through `ITemplateSourceLoaderResolver`.
 2. Compiles and caches the Razor template through `ITemplateCache`.
-3. Evaluates it through `ISqlGenerator`, collecting Dapper parameters.
-4. Opens a connection from `DbDataSource` and executes through `IQueryExecutor`.
+3. Evaluates it through `ISqlGenerator`, collecting provider-neutral parameters.
+4. Opens a connection from `DbDataSource` and executes through `IQueryExecutor` and the selected `IExecutionAdapter`.
 
 The package does not create a provider-specific `DbDataSource`; the application must supply one.
 

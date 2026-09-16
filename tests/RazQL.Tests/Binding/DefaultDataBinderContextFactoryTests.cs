@@ -23,8 +23,8 @@ public class DefaultDataBinderContextFactoryTests
 
         Assert.Equal("@first_name", firstBinding);
         Assert.Equal("@second_name", secondBinding);
-        Assert.Equal("first", first.Parameters.Get<string>("first_name"));
-        Assert.Equal("second", second.Parameters.Get<string>("second_name"));
+        Assert.Equal("first", first.Parameters.GetParameters().Single().Value);
+        Assert.Equal("second", second.Parameters.GetParameters().Single().Value);
         Assert.NotSame(first.Parameters, second.Parameters);
         providerFactory.Received(2).Create();
     }

@@ -1,6 +1,6 @@
 # RazQL
 
-RazQL (pronounced “rascal”) builds and executes parameterized SQL from trusted Razor templates. It combines the RazQL runtime with compile-time mapper validation and source generation.
+RazQL (pronounced “rascal”) builds and executes parameterized SQL from trusted Razor templates. This package combines the provider-neutral runtime, compile-time mapper validation and source generation, and the Dapper execution adapter.
 
 ## Installation
 
@@ -29,6 +29,6 @@ public interface IArtistMapper
 }
 ```
 
-The generator validates decorated mapper interfaces and emits their implementations during compilation. The runtime compiles trusted Razor templates, binds their values as Dapper parameters, and executes the resulting SQL.
+The generator validates decorated mapper interfaces and emits their implementations during compilation. The runtime compiles trusted Razor templates and collects provider-neutral parameters. Select `DapperExecutionAdapter` when configuring `RazQL.DependencyInjection`; the adapter converts those parameters for Dapper and executes the resulting SQL.
 
 Razor templates execute as application code and must not contain untrusted source.

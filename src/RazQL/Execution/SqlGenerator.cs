@@ -1,4 +1,3 @@
-using Dapper;
 using Microsoft.Extensions.Logging;
 using RazQL.Binding;
 using RazQL.Template;
@@ -12,7 +11,7 @@ namespace RazQL.Execution;
 public sealed class SqlGenerator(ITemplateCache templateCache, IDataBinderContextFactory dataBinderContextFactory, ILogger<SqlGenerator> logger) : ISqlGenerator
 {
     /// <inheritdoc />
-    public async Task<(string sql, DynamicParameters @params)> ApplyCriteriaAsync<TCriteria>(QueryDescriptor descriptor, TCriteria criteria, CancellationToken cancellationToken = default)
+    public async Task<ParameterizedQueryResult> ApplyCriteriaAsync<TCriteria>(QueryDescriptor descriptor, TCriteria criteria, CancellationToken cancellationToken = default)
     {
         var queryTemplate = await templateCache.GetTemplateAsync<TCriteria>(descriptor, cancellationToken);
         var (dataBinder, dbParams) = dataBinderContextFactory.Create(criteria);
@@ -20,7 +19,7 @@ public sealed class SqlGenerator(ITemplateCache templateCache, IDataBinderContex
         {
             m.Model = dataBinder;
         });
-        logger.LogDebug(sql);
-        return (sql, dbParams);
+        logger.LogDebug("{GeneratedSql}", sql);
+        return new ParameterizedQueryResult(sql, dbParams);
     }
 }

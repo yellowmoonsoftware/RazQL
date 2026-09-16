@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using Dapper;
 using NSubstitute;
 using RazQL.Binding;
 
@@ -10,12 +9,17 @@ public class DataBinderTests
     [Fact]
     public void Bind_AddsNamedParameterAndReusesIt()
     {
-        var parameters = new DynamicParameters();
+        var parameters = new RecordingParameterBag();
         var nameProvider = Substitute.For<IParameterNameProvider>();
         nameProvider.GetStableName("Name").Returns("artist_name");
         var expressionCache = Substitute.For<IExpressionCache>();
+        var getterCalls = 0;
         expressionCache.GetMemberAndDelegate(Arg.Any<Expression<Func<BindingModel, string>>>())
-            .Returns(("Name", model => model.Name));
+            .Returns(("Name", model =>
+            {
+                getterCalls++;
+                return model.Name;
+            }));
         var binder = CreateBinder(new BindingModel { Name = "Tom Petty" }, parameters, nameProvider, expressionCache);
 
         var first = binder.Bind(m => m.Name);
@@ -25,13 +29,14 @@ public class DataBinderTests
         Assert.Equal(first, second);
         Assert.Equal("Tom Petty", parameters.Get<string>("artist_name"));
         Assert.Single(parameters.ParameterNames);
+        Assert.Equal(1, getterCalls);
         nameProvider.Received(2).GetStableName("Name");
     }
 
     [Fact]
     public void Bind_UsesNestedMemberPath()
     {
-        var parameters = new DynamicParameters();
+        var parameters = new RecordingParameterBag();
         var nameProvider = Substitute.For<IParameterNameProvider>();
         nameProvider.GetStableName("Address_City").Returns("city");
         var expressionCache = Substitute.For<IExpressionCache>();
@@ -50,7 +55,7 @@ public class DataBinderTests
     [Fact]
     public void BindTransform_GeneratesNewParameterForEveryEvaluation()
     {
-        var parameters = new DynamicParameters();
+        var parameters = new RecordingParameterBag();
         var nameProvider = Substitute.For<IParameterNameProvider>();
         nameProvider.GetUniqueName("Namex").Returns("like_01", "like_02");
         var expressionCache = Substitute.For<IExpressionCache>();
@@ -72,7 +77,7 @@ public class DataBinderTests
     [Fact]
     public void BindAsArray_MaterializesCollectionAndReusesStableParameter()
     {
-        var parameters = new DynamicParameters();
+        var parameters = new RecordingParameterBag();
         var nameProvider = Substitute.For<IParameterNameProvider>();
         nameProvider.GetStableName("Values").Returns("ids");
         var expressionCache = Substitute.For<IExpressionCache>();
@@ -97,7 +102,7 @@ public class DataBinderTests
     [Fact]
     public void BindAsArray_PreservesNullCollectionByDefault()
     {
-        var parameters = new DynamicParameters();
+        var parameters = new RecordingParameterBag();
         var nameProvider = Substitute.For<IParameterNameProvider>();
         nameProvider.GetStableName("OptionalValues").Returns("ids");
         var expressionCache = Substitute.For<IExpressionCache>();
@@ -119,7 +124,7 @@ public class DataBinderTests
     [Fact]
     public void BindAsArray_EmptyArrayPolicyUsesDistinctReusableParameter()
     {
-        var parameters = new DynamicParameters();
+        var parameters = new RecordingParameterBag();
         var nameProvider = Substitute.For<IParameterNameProvider>();
         nameProvider.GetStableName("OptionalValues").Returns("ids");
         nameProvider.GetStableName("OptionalValues_orempty").Returns("ids_orempty");
@@ -152,7 +157,7 @@ public class DataBinderTests
     [Fact]
     public void BindAsArray_UnknownPolicyUsesDefaultNullBehavior()
     {
-        var parameters = new DynamicParameters();
+        var parameters = new RecordingParameterBag();
         var nameProvider = Substitute.For<IParameterNameProvider>();
         nameProvider.GetStableName("OptionalValues").Returns("ids");
         var expressionCache = Substitute.For<IExpressionCache>();
@@ -203,7 +208,7 @@ public class DataBinderTests
     [Fact]
     public void Select_CreatesIndexedChildBindersAndContexts()
     {
-        var parameters = new DynamicParameters();
+        var parameters = new RecordingParameterBag();
         var model = new BindingModel
         {
             Children =
@@ -308,11 +313,11 @@ public class DataBinderTests
 
     private static DataBinder<BindingModel> CreateBinder(
         BindingModel model,
-        DynamicParameters? parameters = null,
+        RecordingParameterBag? parameters = null,
         IParameterNameProvider? nameProvider = null,
         IExpressionCache? expressionCache = null,
         DataBinderOptions? options = null) =>
-        new(model, parameters ?? new DynamicParameters(),
+        new(model, parameters ?? new RecordingParameterBag(),
             nameProvider ?? Substitute.For<IParameterNameProvider>(),
             options ?? new DataBinderOptions(),
             expressionCache ?? Substitute.For<IExpressionCache>());

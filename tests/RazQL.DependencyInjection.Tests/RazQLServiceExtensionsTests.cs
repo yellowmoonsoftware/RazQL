@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,10 +13,60 @@ namespace RazQL.DependencyInjection.Tests;
 public class RazQLServiceExtensionsTests
 {
     [Fact]
+    public void AddRazQL_RequiresExecutionAdapter()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddRazQL());
+
+        Assert.Contains("UsingExecutionAdapter", exception.Message);
+        Assert.Empty(services);
+    }
+
+    [Fact]
+    public void AddRazQL_RequiresExecutionAdapterAfterBuilderAction()
+    {
+        var services = new ServiceCollection();
+        var actionInvoked = false;
+
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddRazQL(builder =>
+        {
+            actionInvoked = true;
+            builder.ConfigureDataBinding(_ => { });
+        }));
+
+        Assert.True(actionInvoked);
+        Assert.Contains("UsingExecutionAdapter", exception.Message);
+        Assert.Empty(services);
+    }
+
+    [Fact]
+    public void AddRazQL_RequiresBuilderSelectionEvenWhenAdapterIsAlreadyRegistered()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IExecutionAdapter, ReplacementExecutionAdapter>();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddRazQL());
+
+        Assert.Contains("UsingExecutionAdapter", exception.Message);
+        Assert.Single(services);
+    }
+
+    [Fact]
+    public void UsingExecutionAdapter_RegistersSelectedAdapter()
+    {
+        var services = new ServiceCollection();
+        services.AddRazQL(builder => builder.UsingExecutionAdapter<ReplacementExecutionAdapter>());
+        using var provider = services.BuildServiceProvider();
+
+        Assert.IsType<ReplacementExecutionAdapter>(provider.GetRequiredService<IExecutionAdapter>());
+    }
+
+    [Fact]
     public void AddRazQL_RegistersBuiltInLoadersAsSharedSingletons()
     {
         var services = new ServiceCollection();
-        services.AddRazQL();
+        services.AddRazQL(builder => builder.UsingExecutionAdapter<ReplacementExecutionAdapter>());
         using var provider = services.BuildServiceProvider();
 
         var loaders = provider.GetServices<ITemplateSourceLoader>().ToArray();
@@ -37,6 +88,7 @@ public class RazQLServiceExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddRazQL(builder => builder
+            .UsingExecutionAdapter<ReplacementExecutionAdapter>()
             .AddTemplateSourceLoader<FirstCustomSourceLoader>()
             .AddTemplateSourceLoader<SecondCustomSourceLoader>());
         using var provider = services.BuildServiceProvider();
@@ -56,8 +108,9 @@ public class RazQLServiceExtensionsTests
     public void WithTemplateSourceLoaderResolver_ReplacesDefaultResolver()
     {
         var services = new ServiceCollection();
-        services.AddRazQL(builder =>
-            builder.WithTemplateSourceLoaderResolver<ReplacementSourceLoaderResolver>());
+        services.AddRazQL(builder => builder
+            .UsingExecutionAdapter<ReplacementExecutionAdapter>()
+            .WithTemplateSourceLoaderResolver<ReplacementSourceLoaderResolver>());
         using var provider = services.BuildServiceProvider();
 
         Assert.IsType<ReplacementSourceLoaderResolver>(
@@ -71,6 +124,7 @@ public class RazQLServiceExtensionsTests
         services.AddSingleton<ILogger<SqlGenerator>>(NullLogger<SqlGenerator>.Instance);
         services.AddSingleton<ILogger<DefaultTemplateCache>>(NullLogger<DefaultTemplateCache>.Instance);
         services.AddRazQL(builder => builder
+            .UsingExecutionAdapter<ReplacementExecutionAdapter>()
             .ConfigureDataBinding(options => options.WithOrderByDirectionClause(OrderByDirection.Asc, "UP"))
             .ConfigureDataBinding(options => options.WithOrderByNullsClause(OrderByNulls.Last, "AT END")));
         using var provider = services.BuildServiceProvider();
@@ -92,7 +146,9 @@ public class RazQLServiceExtensionsTests
             new Dictionary<OrderByDirection, string> { [OrderByDirection.Asc] = "UP" },
             DataBinderOptions.DefaultOrderByNullsClause);
         var services = new ServiceCollection();
-        services.AddRazQL(builder => builder.ConfigureDataBinding(options));
+        services.AddRazQL(builder => builder
+            .UsingExecutionAdapter<ReplacementExecutionAdapter>()
+            .ConfigureDataBinding(options));
         using var provider = services.BuildServiceProvider();
 
         var registeredOptions = provider.GetRequiredService<DataBinderOptions>();
@@ -112,7 +168,9 @@ public class RazQLServiceExtensionsTests
         var options = configuration.GetSection("DataBinder").Get<DataBinderOptions>();
         Assert.NotNull(options);
         var services = new ServiceCollection();
-        services.AddRazQL(builder => builder.ConfigureDataBinding(options));
+        services.AddRazQL(builder => builder
+            .UsingExecutionAdapter<ReplacementExecutionAdapter>()
+            .ConfigureDataBinding(options));
         using var provider = services.BuildServiceProvider();
 
         var registered = provider.GetRequiredService<DataBinderOptions>();
@@ -125,6 +183,7 @@ public class RazQLServiceExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddRazQL(builder => builder
+            .UsingExecutionAdapter<ReplacementExecutionAdapter>()
             .WithDataBinderContextFactory<ReplacementDataBinderContextFactory>()
             .WithParameterNameProviderFactory<ReplacementParameterNameProviderFactory>());
         using var provider = services.BuildServiceProvider();
@@ -140,6 +199,7 @@ public class RazQLServiceExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddRazQL(builder => builder
+            .UsingExecutionAdapter<ReplacementExecutionAdapter>()
             .WithQueryExecutor<TestQueryExecutor>()
             .AddMappersFromAssembly(typeof(ITestMapper).Assembly));
         using var provider = services.BuildServiceProvider();
@@ -203,4 +263,15 @@ public sealed class ReplacementDataBinderContextFactory : IDataBinderContextFact
 public sealed class ReplacementParameterNameProviderFactory : IParameterNameProviderFactory
 {
     public IParameterNameProvider Create() => throw new NotSupportedException();
+}
+
+public sealed class ReplacementExecutionAdapter : IExecutionAdapter
+{
+    public Task<IEnumerable<TResult>> QueryAsync<TResult>(DbConnection connection,
+        ParameterizedQueryResult parameterizedQueryResult, CancellationToken cancellationToken) =>
+        throw new NotSupportedException();
+
+    public Task<TResult?> QuerySingleOrDefaultAsync<TResult>(DbConnection connection,
+        ParameterizedQueryResult parameterizedQueryResult, CancellationToken cancellationToken) =>
+        throw new NotSupportedException();
 }

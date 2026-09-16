@@ -1,5 +1,3 @@
-using Dapper;
-
 namespace RazQL.Binding;
 
 /// <summary>Creates query-local default data binders and parameter collections.</summary>
@@ -12,8 +10,8 @@ public sealed class DefaultDataBinderContextFactory(
     /// <inheritdoc />
     public DataBinderContext<TCriteria> Create<TCriteria>(TCriteria criteria)
     {
-        var parameters = new DynamicParameters();
-        var binder = new DataBinder<TCriteria>(criteria, parameters, parameterNameProviderFactory.Create(), options);
-        return new DataBinderContext<TCriteria>(binder, parameters);
+        var parameterBag = new DictionaryParameterBag();
+        var binder = new DataBinder<TCriteria>(criteria, parameterBag, parameterNameProviderFactory.Create(), options);
+        return new DataBinderContext<TCriteria>(binder, parameterBag);
     }
 }

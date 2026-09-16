@@ -23,10 +23,10 @@ public interface IRazQLBuilder
     /// <returns>This builder.</returns>
     IRazQLBuilder WithQueryExecutor<T>() where T : IQueryExecutor;
 
-    /// <summary>Replaces the default singleton Dapper executor.</summary>
-    /// <typeparam name="T">The Dapper executor implementation.</typeparam>
+    /// <summary>Selects the singleton adapter used to execute generated queries.</summary>
+    /// <typeparam name="T">The execution adapter implementation.</typeparam>
     /// <returns>This builder.</returns>
-    IRazQLBuilder WithDapperExecutor<T>() where T : IDapperExecutor;
+    IRazQLBuilder UsingExecutionAdapter<T>() where T : IExecutionAdapter;
 
     /// <summary>Replaces the default singleton template source-loader resolver.</summary>
     /// <typeparam name="T">The resolver implementation.</typeparam>

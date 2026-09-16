@@ -1,8 +1,8 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
-using Dapper;
 using NSubstitute;
+using RazQL.Binding;
 using RazQL.Execution;
 using RazQL.Template;
 
@@ -11,14 +11,15 @@ namespace RazQL.Tests.Execution;
 public class QueryExecutorTests
 {
     [Fact]
-    public async Task ExecuteAsync_UsesGeneratedCommandAndReturnsDapperResults()
+    public async Task ExecuteAsync_ForwardsGeneratedQueryAndReturnsAdapterResults()
     {
         await using var dataSource = new RecordingDataSource();
         var sqlGenerator = Substitute.For<ISqlGenerator>();
-        var dapperExecutor = Substitute.For<IDapperExecutor>();
+        var executionAdapter = Substitute.For<IExecutionAdapter>();
         var descriptor = CreateDescriptor();
         var criteria = new QueryCriteria { Name = "Tom" };
-        var parameters = new DynamicParameters();
+        var parameters = Substitute.For<IParameterBag>();
+        var generatedQuery = new ParameterizedQueryResult("select id, name from artist", parameters);
         var expected = new[]
         {
             new QueryResult { Id = 1, Name = "Tom Petty" },
@@ -26,12 +27,13 @@ public class QueryExecutorTests
         };
         using var cancellation = new CancellationTokenSource();
         sqlGenerator.ApplyCriteriaAsync(descriptor, criteria, cancellation.Token)
-            .Returns(Task.FromResult(("select id, name from artist", parameters)));
-        dapperExecutor.QueryAsync<QueryResult>(
+            .Returns(Task.FromResult(generatedQuery));
+        executionAdapter.QueryAsync<QueryResult>(
                 Arg.Any<DbConnection>(),
-                Arg.Any<CommandDefinition>())
+                Arg.Any<ParameterizedQueryResult>(),
+                cancellation.Token)
             .Returns(expected);
-        var executor = new QueryExecutor(dataSource, sqlGenerator, dapperExecutor);
+        var executor = new QueryExecutor(dataSource, sqlGenerator, executionAdapter);
 
         var result = await executor.ExecuteAsync<QueryCriteria, QueryResult>(
             descriptor,
@@ -40,33 +42,33 @@ public class QueryExecutorTests
 
         Assert.Same(expected, result);
         await sqlGenerator.Received(1).ApplyCriteriaAsync(descriptor, criteria, cancellation.Token);
-        await dapperExecutor.Received(1).QueryAsync<QueryResult>(
+        await executionAdapter.Received(1).QueryAsync<QueryResult>(
             dataSource.LastConnection!,
-            Arg.Is<CommandDefinition>(command =>
-                command.CommandText == "select id, name from artist" &&
-                ReferenceEquals(command.Parameters, parameters) &&
-                command.CancellationToken == cancellation.Token));
+            generatedQuery,
+            cancellation.Token);
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task ExecuteSingleOrDefaultAsync_ReturnsDapperResult(bool hasResult)
+    public async Task ExecuteSingleOrDefaultAsync_ReturnsAdapterResult(bool hasResult)
     {
         await using var dataSource = new RecordingDataSource();
         var sqlGenerator = Substitute.For<ISqlGenerator>();
-        var dapperExecutor = Substitute.For<IDapperExecutor>();
+        var executionAdapter = Substitute.For<IExecutionAdapter>();
         var descriptor = CreateDescriptor();
         var criteria = new QueryCriteria();
-        var parameters = new DynamicParameters();
+        var parameters = Substitute.For<IParameterBag>();
+        var generatedQuery = new ParameterizedQueryResult("select id, name from artist", parameters);
         QueryResult? expected = hasResult ? new QueryResult { Id = 1, Name = "Tom Petty" } : null;
         sqlGenerator.ApplyCriteriaAsync(descriptor, criteria, CancellationToken.None)
-            .Returns(Task.FromResult(("select id, name from artist", parameters)));
-        dapperExecutor.QuerySingleOrDefaultAsync<QueryResult>(
+            .Returns(Task.FromResult(generatedQuery));
+        executionAdapter.QuerySingleOrDefaultAsync<QueryResult>(
                 Arg.Any<DbConnection>(),
-                Arg.Any<CommandDefinition>())
+                Arg.Any<ParameterizedQueryResult>(),
+                CancellationToken.None)
             .Returns(expected);
-        var executor = new QueryExecutor(dataSource, sqlGenerator, dapperExecutor);
+        var executor = new QueryExecutor(dataSource, sqlGenerator, executionAdapter);
 
         var result = await executor.ExecuteSingleOrDefaultAsync<QueryCriteria, QueryResult>(
             descriptor,
@@ -75,12 +77,10 @@ public class QueryExecutorTests
 
         Assert.Same(expected, result);
         await sqlGenerator.Received(1).ApplyCriteriaAsync(descriptor, criteria, CancellationToken.None);
-        await dapperExecutor.Received(1).QuerySingleOrDefaultAsync<QueryResult>(
+        await executionAdapter.Received(1).QuerySingleOrDefaultAsync<QueryResult>(
             dataSource.LastConnection!,
-            Arg.Is<CommandDefinition>(command =>
-                command.CommandText == "select id, name from artist" &&
-                ReferenceEquals(command.Parameters, parameters) &&
-                command.CancellationToken == CancellationToken.None));
+            generatedQuery,
+            CancellationToken.None);
     }
 
     private static QueryDescriptor CreateDescriptor() =>

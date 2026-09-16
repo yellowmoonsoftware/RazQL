@@ -34,6 +34,7 @@ dotnet restore "$repository_root/RazQL.slnx"
 projects=(
     "src/RazQL/RazQL.csproj"
     "src/RazQL.Generators/RazQL.Generators.csproj"
+    "src/RazQL.Dapper/RazQL.Dapper.csproj"
     "src/RazQL.DependencyInjection/RazQL.DependencyInjection.csproj"
     "src/RazQL.Package/RazQL.Package.csproj"
 )
