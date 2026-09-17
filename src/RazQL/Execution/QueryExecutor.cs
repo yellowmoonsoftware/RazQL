@@ -8,6 +8,7 @@ namespace RazQL.Execution;
 /// <param name="dataSource">The provider-specific database data source.</param>
 /// <param name="sqlGenerator">The SQL generator.</param>
 /// <param name="executorAdapter">The adapter that hands off execution to a specific provider.</param>
+/// <param name="logger">The logger used for query-execution diagnostics.</param>
 public sealed partial class QueryExecutor(
     DbDataSource dataSource,
     ISqlGenerator sqlGenerator,

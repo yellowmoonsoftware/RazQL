@@ -22,3 +22,6 @@ RAZQL015 | RazQL | Error | Mapper interfaces must be accessible to generated cod
 RAZQL016 | RazQL | Error | Mapper criteria types must support generic execution
 RAZQL017 | RazQL | Error | Mapper template source must exist
 RAZQL018 | RazQL | Error | Mapper template source must be unambiguous
+RAZQL019 | RazQL | Error | Template source build configuration must match the selected loader
+RAZQL020 | RazQL | Error | Mapper or method has conflicting template source attributes
+RAZQL021 | RazQL | Error | Inline query source cannot be blank

@@ -85,6 +85,7 @@ public class MapperTemplateSourceDiagnosticTests
         Assert.Contains("manifest resource name must be one of", diagnostic.GetMessage());
         Assert.Contains("Consumers.SqlTemplates.ArtistMapper.Find.sql.cshtml", diagnostic.GetMessage());
         Assert.Contains("Different.Root.SqlTemplates.ArtistMapper.Find.sql.cshtml", diagnostic.GetMessage());
+        AssertMethodLocation(diagnostic, MapperSource);
     }
 
     [Fact]
@@ -167,7 +168,11 @@ public class MapperTemplateSourceDiagnosticTests
 
         var diagnostics = RunGeneratorForSource(source);
 
-        Assert.Single(diagnostics, diagnostic => diagnostic.Id == "RAZQL021");
+        var diagnostic = Assert.Single(diagnostics, diagnostic => diagnostic.Id == "RAZQL021");
+        Assert.Equal(
+            "Inline query source specified for mapper method 'Consumers.IArtistMapper.FindAsync(long, System.Threading.CancellationToken)' cannot be null, empty, or whitespace",
+            diagnostic.GetMessage());
+        AssertAttributeLocation(diagnostic, source, "RazQLQuery");
     }
 
     [Fact]
@@ -194,7 +199,11 @@ public class MapperTemplateSourceDiagnosticTests
 
         var diagnostics = RunGeneratorForSource(source);
 
-        Assert.Single(diagnostics, diagnostic => diagnostic.Id == "RAZQL020");
+        var diagnostic = Assert.Single(diagnostics, diagnostic => diagnostic.Id == "RAZQL020");
+        Assert.Equal(
+            "'Consumers.IArtistMapper.FindAsync(long, System.Threading.CancellationToken)' has more than one template source attribute",
+            diagnostic.GetMessage());
+        AssertAttributeLocation(diagnostic, source, "RazQLQuery");
     }
 
     [Fact]
@@ -509,7 +518,12 @@ public class MapperTemplateSourceDiagnosticTests
                 "SqlTemplates/ArtistMapper/Find.sql.cshtml"));
 
         var diagnostic = Assert.Single(diagnostics, diagnostic => diagnostic.Id == "RAZQL019");
-        Assert.Contains("build action must be EmbeddedResource", diagnostic.GetMessage());
+        Assert.Equal(
+            "Template source '/project/Consumers/SqlTemplates/ArtistMapper/Find.sql.cshtml' for mapper method " +
+            "'Consumers.IArtistMapper.FindAsync(Consumers.ArtistCriteria, System.Threading.CancellationToken)' " +
+            "is not configured for resource loading: the build action must be EmbeddedResource, but it is Content",
+            diagnostic.GetMessage());
+        AssertMethodLocation(diagnostic, MapperSource);
     }
 
     [Fact]
@@ -586,6 +600,25 @@ public class MapperTemplateSourceDiagnosticTests
                 "External/SqlTemplates/ArtistMapper/Find.sql.cshtml"));
 
         Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+    }
+
+    private static void AssertMethodLocation(Diagnostic diagnostic, string source)
+    {
+        Assert.Equal("/project/Consumers/IArtistMapper.cs", diagnostic.Location.GetLineSpan().Path);
+        Assert.Equal("FindAsync", source.Substring(
+            diagnostic.Location.SourceSpan.Start,
+            diagnostic.Location.SourceSpan.Length));
+    }
+
+    private static void AssertAttributeLocation(
+        Diagnostic diagnostic,
+        string source,
+        string attributeName)
+    {
+        Assert.Equal("/project/Consumers/IArtistMapper.cs", diagnostic.Location.GetLineSpan().Path);
+        Assert.StartsWith(attributeName, source.Substring(
+            diagnostic.Location.SourceSpan.Start,
+            diagnostic.Location.SourceSpan.Length));
     }
 
     private static IReadOnlyList<Diagnostic> RunGenerator(params string[] templatePaths)

@@ -26,6 +26,8 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Emission/SqlTemplates/**/*.sql.cshtml" />
+    <EmbeddedResource Include="../../docs/diagnostics.md" LogicalName="Diagnostics.md" />
+    <EmbeddedResource Include="../../src/RazQL.Generators/AnalyzerReleases.Unshipped.md" LogicalName="AnalyzerReleases.Unshipped.md" />
     <Using Include="Xunit" />
   </ItemGroup>
 

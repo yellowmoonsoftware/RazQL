@@ -79,7 +79,7 @@ Use `RazQLTemplateSourceAttribute` on an interface for shared configuration and 
 
 ## Build and Test
 
-The repository requires the .NET 10 SDK.
+The repository requires .NET SDK 10.0.100 or newer within the .NET 10 line. See the [generator compatibility policy](src/RazQL.Generators/README.md#compiler-compatibility).
 
 ```shell
 dotnet restore RazQL.slnx

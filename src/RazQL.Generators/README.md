@@ -14,6 +14,8 @@ Apply `RazQLMapperAttribute` to an interface. Every member must be a public inst
 
 For every valid mapper, the generator emits an internal sealed implementation in `{MapperNamespace}.Generated`. The implementation delegates execution to `IQueryExecutor`, exposes its descriptors for query calls, implements `IMapperTemplatePreloader`, and emits an assembly-level mapper-registration attribute for dependency injection.
 
+For a single-row method returning a nonnullable reference (`Task<Artist>`), the generated mapper throws `InvalidOperationException` if the executor returns no row. A nullable reference result (`Task<Artist?>`) returns `null` in that case. Value-type results retain the executor's default-value behavior.
+
 ## Template Validation
 
 The generator validates source existence and build metadata for the built-in resource and file-system loaders. Embedded templates should use:
@@ -43,4 +45,8 @@ The packaged `buildTransitive/RazQL.Generators.targets` file exposes matching `.
 <Import Project="../RazQL.Generators/buildTransitive/RazQL.Generators.targets" />
 ```
 
-Compiler diagnostics use the `RAZQL` prefix and are errors when a mapper cannot be generated safely or its built-in template source cannot be resolved unambiguously.
+Compiler diagnostics use the `RAZQL` prefix and are errors when a mapper cannot be generated safely or its built-in template source cannot be resolved unambiguously. Each diagnostic links to [its explanation and remedy](https://github.com/yellowmoonsoftware/RazQL/blob/main/docs/diagnostics.md).
+
+## Compiler Compatibility
+
+The minimum supported build environment is .NET SDK 10.0.100 (C# 14). The generator targets `netstandard2.0` for compiler loading and compiles against `Microsoft.CodeAnalysis.CSharp` 5.0.0. Newer Roslyn APIs must not be used until the minimum SDK and compiler baseline is deliberately raised. CI builds and tests with SDK 10.0.100 and the current .NET 10 SDK, including a packaged consumer check. Earlier SDKs and IDE compiler hosts are not supported.

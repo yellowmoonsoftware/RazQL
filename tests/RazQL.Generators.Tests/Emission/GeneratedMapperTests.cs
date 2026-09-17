@@ -74,6 +74,40 @@ public class GeneratedMapperTests
     }
 
     [Fact]
+    public async Task GeneratedMapper_ReturnsRequiredReferenceResult()
+    {
+        var criteria = new TestCriteria();
+        var expected = new TestResult(1, "Found");
+        var executor = Substitute.For<IQueryExecutor>();
+        executor.ExecuteAsync<INonNullableTestMapper, TestCriteria, TestResult>(
+                Arg.Any<QueryDescriptor<INonNullableTestMapper, TestCriteria, TestResult>>(),
+                criteria,
+                CancellationToken.None)
+            .Returns(Task.FromResult<TestResult?>(expected));
+        var mapper = CreateMapper<INonNullableTestMapper>(executor);
+
+        Assert.Same(expected, await mapper.FindRequiredAsync(criteria, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GeneratedMapper_ThrowsWhenRequiredReferenceResultIsMissing()
+    {
+        var criteria = new TestCriteria();
+        var executor = Substitute.For<IQueryExecutor>();
+        executor.ExecuteAsync<INonNullableTestMapper, TestCriteria, TestResult>(
+                Arg.Any<QueryDescriptor<INonNullableTestMapper, TestCriteria, TestResult>>(),
+                criteria,
+                CancellationToken.None)
+            .Returns(Task.FromResult<TestResult?>(null));
+        var mapper = CreateMapper<INonNullableTestMapper>(executor);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            mapper.FindRequiredAsync(criteria, CancellationToken.None));
+
+        Assert.Contains("INonNullableTestMapper.FindRequiredAsync", exception.Message);
+    }
+
+    [Fact]
     public async Task GeneratedMapper_ReturnsTemplateCacheTaskWithoutAwaitingIt()
     {
         var cancellationToken = new CancellationToken(canceled: false);
@@ -135,3 +169,10 @@ public interface ISingleTestMapper
 public sealed record TestCriteria;
 
 public sealed record TestResult(long Id, string Name);
+
+[RazQLMapper]
+public interface INonNullableTestMapper
+{
+    [RazQLQuery("select 1")]
+    Task<TestResult> FindRequiredAsync(TestCriteria criteria, CancellationToken cancellationToken);
+}

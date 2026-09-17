@@ -10,7 +10,11 @@ permissions:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk: ['10.0.100', '10.0.x']
 
     steps:
       - name: Check out repository
@@ -19,13 +23,19 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: ${{ matrix.sdk }}
+
+      - name: Pin minimum SDK
+        if: matrix.sdk == '10.0.100'
+        run: |
+          printf '%s\n' '{"sdk":{"version":"10.0.100","rollForward":"disable"}}' > global.json
+          test "$(dotnet --version)" = '10.0.100'
 
       - name: Restore
         run: dotnet restore RazQL.slnx
 
       - name: Build
-        run: dotnet build RazQL.slnx --configuration Release --no-restore
+        run: dotnet build RazQL.slnx --configuration Release --no-restore -warnaserror:CS8619
 
       - name: Test
         run: dotnet test RazQL.slnx --configuration Release --no-build
