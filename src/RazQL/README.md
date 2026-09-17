@@ -11,7 +11,7 @@
 3. Evaluates it through `ISqlGenerator`, collecting provider-neutral parameters.
 4. Opens a connection from `DbDataSource` and executes through `IQueryExecutor` and the selected `IExecutionAdapter`.
 
-The package does not create a provider-specific `DbDataSource`; the application must supply one.
+Successful template compilations remain cached. Failed or canceled source loading and compilation are evicted, so a later request can retry. The package does not create a provider-specific `DbDataSource`; the application must supply one.
 
 ## Template Conventions
 

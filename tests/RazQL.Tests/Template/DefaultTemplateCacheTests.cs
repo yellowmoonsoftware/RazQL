@@ -74,6 +74,78 @@ public class DefaultTemplateCacheTests
             CancellationToken.None);
     }
 
+    [Fact]
+    public async Task GetTemplateAsync_RetriesAfterCompilationFailureAndCachesSuccess()
+    {
+        var firstDescriptor = CreateDescriptor();
+        var equivalentDescriptor = CreateDescriptor();
+        var resolver = Substitute.For<ITemplateSourceLoaderResolver>();
+        var loader = Substitute.For<ITemplateSourceLoader>();
+        var engine = Substitute.For<IRazorEngine>();
+        var compiledTemplate = Substitute.For<IRazorEngineCompiledTemplate<RazQLModel<string>>>();
+        var failure = new InvalidOperationException("Compilation failed");
+        var compilationCount = 0;
+        resolver.Resolve(Arg.Any<QueryDescriptor>()).Returns(loader);
+        loader.LoadAsync(Arg.Any<QueryDescriptor>(), CancellationToken.None).Returns(TemplateSource);
+        engine.CompileAsync<RazQLModel<string>>(
+                TemplateSource,
+                Arg.Any<Action<IRazorEngineCompilationOptionsBuilder>>(),
+                CancellationToken.None)
+            .Returns(_ => ++compilationCount == 1
+                ? Task.FromException<IRazorEngineCompiledTemplate<RazQLModel<string>>>(failure)
+                : Task.FromResult(compiledTemplate));
+        var cache = new DefaultTemplateCache(
+            engine,
+            resolver,
+            Substitute.For<ILogger<DefaultTemplateCache>>());
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            cache.GetTemplateAsync(firstDescriptor, CancellationToken.None));
+        var retried = await cache.GetTemplateAsync(equivalentDescriptor, CancellationToken.None);
+        var cached = await cache.GetTemplateAsync(firstDescriptor, CancellationToken.None);
+
+        Assert.Same(failure, thrown);
+        Assert.Same(compiledTemplate, retried);
+        Assert.Same(retried, cached);
+        Assert.Equal(2, compilationCount);
+        resolver.Received(2).Resolve(Arg.Any<QueryDescriptor>());
+        await loader.Received(2).LoadAsync(Arg.Any<QueryDescriptor>(), CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task GetTemplateAsync_RetriesAfterCancellation()
+    {
+        using var canceledSource = new CancellationTokenSource();
+        canceledSource.Cancel();
+        var descriptor = CreateDescriptor();
+        var resolver = Substitute.For<ITemplateSourceLoaderResolver>();
+        var loader = Substitute.For<ITemplateSourceLoader>();
+        var engine = Substitute.For<IRazorEngine>();
+        var compiledTemplate = Substitute.For<IRazorEngineCompiledTemplate<RazQLModel<string>>>();
+        resolver.Resolve(Arg.Any<QueryDescriptor>()).Returns(loader);
+        loader.LoadAsync(descriptor, canceledSource.Token)
+            .Returns(Task.FromCanceled<string>(canceledSource.Token));
+        loader.LoadAsync(descriptor, CancellationToken.None).Returns(TemplateSource);
+        engine.CompileAsync<RazQLModel<string>>(
+                TemplateSource,
+                Arg.Any<Action<IRazorEngineCompilationOptionsBuilder>>(),
+                CancellationToken.None)
+            .Returns(compiledTemplate);
+        var cache = new DefaultTemplateCache(
+            engine,
+            resolver,
+            Substitute.For<ILogger<DefaultTemplateCache>>());
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            cache.GetTemplateAsync(descriptor, canceledSource.Token));
+        var result = await cache.GetTemplateAsync(descriptor, CancellationToken.None);
+
+        Assert.Same(compiledTemplate, result);
+        resolver.Received(2).Resolve(descriptor);
+        await loader.Received(1).LoadAsync(descriptor, canceledSource.Token);
+        await loader.Received(1).LoadAsync(descriptor, CancellationToken.None);
+    }
+
     private static QueryDescriptor<IAttributedMapper, string, DescriptorResult> CreateDescriptor() =>
         QueryDescriptor.ForExpression<IAttributedMapper, string, DescriptorResult>(mapper => mapper.LoadAsync);
 }
