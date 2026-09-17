@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.1.0-alpha</Version>
+    <Authors>Yellow Moon Software</Authors>
+    <Company>Yellow Moon Software</Company>
+    <Copyright>Copyright (c) 2026 Yellow Moon Software</Copyright>
+    <PackageProjectUrl>https://github.com/yellowmoonsoftware/RazQL</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yellowmoonsoftware/RazQL</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>razql-icon.png</PackageIcon>
+    <PackageReleaseNotes>Initial alpha release. See https://github.com/yellowmoonsoftware/RazQL/releases for details.</PackageReleaseNotes>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../assets/razql-icon.png" Pack="true" PackagePath="razql-icon.png" />
+  </ItemGroup>
+</Project>

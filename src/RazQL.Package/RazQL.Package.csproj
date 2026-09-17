@@ -3,9 +3,11 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <PackageId>RazQL</PackageId>
-    <Description>Razor-based SQL mapper runtime and source generator for .NET.</Description>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
+    <Title>RazQL</Title>
+    <Description>RazQL runtime, source generator, and Dapper adapter for Razor-based SQL mappers.</Description>
+    <PackageTags>RazQL;Razor;SQL;mapper;source-generator;Dapper</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <!-- This project intentionally produces a dependency-only package without lib/ref assets. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>

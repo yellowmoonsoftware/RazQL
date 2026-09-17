@@ -7,8 +7,8 @@
 Install the standard package and the optional Microsoft dependency-injection integration:
 
 ```shell
-dotnet package add RazQL
-dotnet package add RazQL.DependencyInjection
+dotnet package add RazQL --prerelease
+dotnet package add RazQL.DependencyInjection --prerelease
 ```
 
 Register a provider-specific `DbDataSource`, then add RazQL and the assembly containing generated mappers:

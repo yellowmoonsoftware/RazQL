@@ -17,13 +17,13 @@ The project is being prepared for an initial open source release. No stable NuGe
 Install the standard package to reference the runtime and activate the generator:
 
 ```shell
-dotnet package add RazQL
+dotnet package add RazQL --prerelease
 ```
 
 Add Microsoft dependency-injection integration separately:
 
 ```shell
-dotnet package add RazQL.DependencyInjection
+dotnet package add RazQL.DependencyInjection --prerelease
 ```
 
 ## Mapper Example
@@ -90,7 +90,7 @@ dotnet test RazQL.slnx
 
 ## Status
 
-RazQL is a proof of concept moving toward its first public release. Package metadata, compatibility targets, and release automation still need to be finalized.
+RazQL is a proof of concept moving toward its first public release. The first package version is `0.1.0-alpha`; release automation still needs to be finalized.
 
 ## License
 

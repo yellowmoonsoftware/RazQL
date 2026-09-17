@@ -5,13 +5,13 @@ RazQL (pronounced “rascal”) builds and executes parameterized SQL from trust
 ## Installation
 
 ```shell
-dotnet package add RazQL
+dotnet package add RazQL --prerelease
 ```
 
 Add the optional Microsoft dependency-injection integration separately:
 
 ```shell
-dotnet package add RazQL.DependencyInjection
+dotnet package add RazQL.DependencyInjection --prerelease
 ```
 
 ## Mapper Example

@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Title>RazQL.DependencyInjection</Title>
+    <Description>Microsoft dependency injection registration for RazQL runtime services and generated mappers.</Description>
+    <PackageTags>RazQL;dependency-injection;DI;mapper</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 

@@ -9,6 +9,9 @@
     <IsRoslynComponent>true</IsRoslynComponent>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Title>RazQL.Generators</Title>
+    <Description>Incremental source generator and analyzer for RazQL mapper interfaces and SQL templates.</Description>
+    <PackageTags>RazQL;source-generator;analyzer;mapper;SQL</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
