@@ -1,0 +1,54 @@
+name: Bug report
+description: Report incorrect RazQL behavior or a generator diagnostic.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Please do not disclose vulnerabilities here. Use the private reporting
+        instructions in SECURITY.md instead.
+  - type: dropdown
+    id: package
+    attributes:
+      label: Affected package
+      options:
+        - RazQL
+        - RazQL.Core
+        - RazQL.Dapper
+        - RazQL.DependencyInjection
+        - RazQL.Generators
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version or commit
+      placeholder: 0.1.0-alpha or a commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal mapper, template, or project when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Logs or other details
+      description: Remove credentials and other sensitive data before posting.
+    validations:
+      required: false

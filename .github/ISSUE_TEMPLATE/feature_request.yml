@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose a RazQL capability or API change.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Use case
+      description: Describe the problem independently of a preferred implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Desired behavior
+      description: Show an example mapper or template if useful.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility impact
+      description: Note any expected API, diagnostic, or template convention changes.
+    validations:
+      required: false

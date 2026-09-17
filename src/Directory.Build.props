@@ -3,7 +3,7 @@
     <Version>0.1.0-alpha</Version>
     <Authors>Yellow Moon Software</Authors>
     <Company>Yellow Moon Software</Company>
-    <Copyright>Copyright (c) 2026 Yellow Moon Software</Copyright>
+    <Copyright>Copyright (c) 2026 Peter Meyer</Copyright>
     <PackageProjectUrl>https://github.com/yellowmoonsoftware/RazQL</PackageProjectUrl>
     <RepositoryUrl>https://github.com/yellowmoonsoftware/RazQL</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

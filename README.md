@@ -92,6 +92,13 @@ dotnet test RazQL.slnx
 
 RazQL is a proof of concept moving toward its first public release. The first package version is `0.1.0-alpha`; release automation still needs to be finalized.
 
+## Community
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development and pull request guidance,
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for participation standards, and
+[CHANGELOG.md](CHANGELOG.md) for changes. Report vulnerabilities privately as
+described in [SECURITY.md](SECURITY.md).
+
 ## License
 
 RazQL is available under the [MIT License](LICENSE).
