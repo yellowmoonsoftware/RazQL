@@ -45,6 +45,20 @@ For a short query, use inline template source:
 Task<Artist?> FindByIdAsync(long id, CancellationToken cancellationToken);
 ```
 
+## Deployment Compatibility
+
+Native AOT is unsupported: `ITemplateCache` compiles Razor templates through
+RazorEngineCore at runtime, even when applications preload them at startup.
+Native AOT does not support the required runtime code generation and dynamic
+assembly loading.
+
+Single-file publishing without trimming is distinct from Native AOT. A narrow
+.NET 10 framework-dependent smoke test of RazorEngineCore 2026.1.1 succeeded
+on macOS x64, but the full RazQL pipeline has not been validated in that mode.
+Self-contained single-file publishing and trimming remain untested. Applications
+using the file-system loader must deploy their SQL template files separately
+under `AppContext.BaseDirectory`.
+
 ## Binding Values
 
 Templates derive from `RazQLModel<TCriteria>`. Bind data instead of writing model values directly into SQL:

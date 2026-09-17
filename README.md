@@ -77,6 +77,20 @@ Embedded resources are the default. RazQL resolves them using:
 
 Use `RazQLTemplateSourceAttribute` on an interface for shared configuration and `RazQLQueryTemplateSourceAttribute` on a method for an override. `RazQLQueryAttribute` is available for short inline templates. File-system templates are resolved under `AppContext.BaseDirectory` and must remain inside that directory.
 
+## Deployment Compatibility
+
+RazQL does not support Native AOT. It compiles Razor SQL templates through
+RazorEngineCore at runtime, including when templates are preloaded at startup;
+Native AOT does not support runtime code generation or dynamic assembly loading.
+
+Single-file publishing is a separate deployment mode. RazorEngineCore 2026.1.1
+compiled and ran a template in a .NET 10, macOS x64, framework-dependent
+single-file smoke test with trimming disabled. That does not establish support
+for the full RazQL stack. Self-contained single-file publishing and trimming
+have not been validated. File-system templates must still be deployed as
+separate content under `AppContext.BaseDirectory`; embedded-resource templates
+avoid that external-file requirement.
+
 ## Build and Test
 
 The repository requires .NET SDK 10.0.100 or newer within the .NET 10 line. See the [generator compatibility policy](src/RazQL.Generators/README.md#compiler-compatibility).
