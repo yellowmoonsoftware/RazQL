@@ -241,14 +241,14 @@ public sealed class ReplacementSourceLoaderResolver : ITemplateSourceLoaderResol
 
 public sealed class TestQueryExecutor : IQueryExecutor
 {
-    public Task<IEnumerable<TResult>> ExecuteAsync<TCriteria, TResult>(
-        QueryDescriptor descriptor,
+    public Task<IEnumerable<TResult>> ExecuteAsync<TMapper, TCriteria, TResult>(
+        QueryDescriptor<TMapper, TCriteria, IEnumerable<TResult>> descriptor,
         TCriteria criteria,
         CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
-    public Task<TResult?> ExecuteSingleOrDefaultAsync<TCriteria, TResult>(
-        QueryDescriptor descriptor,
+    public Task<TResult?> ExecuteAsync<TMapper, TCriteria, TResult>(
+        QueryDescriptor<TMapper, TCriteria, TResult> descriptor,
         TCriteria criteria,
         CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();

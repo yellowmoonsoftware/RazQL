@@ -11,9 +11,9 @@ namespace RazQL.Execution;
 public sealed class SqlGenerator(ITemplateCache templateCache, IDataBinderContextFactory dataBinderContextFactory, ILogger<SqlGenerator> logger) : ISqlGenerator
 {
     /// <inheritdoc />
-    public async Task<ParameterizedQueryResult> ApplyCriteriaAsync<TCriteria>(QueryDescriptor descriptor, TCriteria criteria, CancellationToken cancellationToken = default)
+    public async Task<ParameterizedQueryResult> ApplyCriteriaAsync<TMapper, TCriteria, TResult>(QueryDescriptor<TMapper, TCriteria, TResult> descriptor, TCriteria criteria, CancellationToken cancellationToken = default)
     {
-        var queryTemplate = await templateCache.GetTemplateAsync<TCriteria>(descriptor, cancellationToken);
+        var queryTemplate = await templateCache.GetTemplateAsync(descriptor, cancellationToken);
         var (dataBinder, dbParams) = dataBinderContextFactory.Create(criteria);
         var sql = await queryTemplate.RunAsync(m =>
         {

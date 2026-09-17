@@ -14,24 +14,24 @@ public class SqlGeneratorTests
     public async Task ApplyCriteriaAsync_UsesCachedTemplateAndInitializesItsDataBinder()
     {
         var templateCache = Substitute.For<ITemplateCache>();
-        var template = Substitute.For<IRazorEngineCompiledTemplate<RazQLModel<SqlCriteria>>>();
+        var template = Substitute.For<IRazorEngineCompiledTemplate<RazQLModel<QueryCriteria>>>();
         var logger = Substitute.For<ILogger<SqlGenerator>>();
         var bindingFactory = Substitute.For<IDataBinderContextFactory>();
-        var binder = Substitute.For<IDataBinder<SqlCriteria>>();
+        var binder = Substitute.For<IDataBinder<QueryCriteria>>();
         var parameters = Substitute.For<IParameterBag>();
         var descriptor = CreateDescriptor();
-        var criteria = new SqlCriteria { Name = "Petty" };
+        var criteria = new QueryCriteria { Name = "Petty" };
         using var cancellation = new CancellationTokenSource();
-        RazQLModel<SqlCriteria>? initializedModel = null;
-        templateCache.GetTemplateAsync<SqlCriteria>(descriptor, cancellation.Token).Returns(template);
-        bindingFactory.Create(criteria).Returns(new DataBinderContext<SqlCriteria>(binder, parameters));
-        template.RunAsync(Arg.Any<Action<RazQLModel<SqlCriteria>>>())
+        RazQLModel<QueryCriteria>? initializedModel = null;
+        templateCache.GetTemplateAsync(descriptor, cancellation.Token).Returns(template);
+        bindingFactory.Create(criteria).Returns(new DataBinderContext<QueryCriteria>(binder, parameters));
+        template.RunAsync(Arg.Any<Action<RazQLModel<QueryCriteria>>>())
             .Returns(callInfo =>
             {
-                var initializer = callInfo.Arg<Action<RazQLModel<SqlCriteria>>>();
-                var model = new RazQLModel<SqlCriteria>
+                var initializer = callInfo.Arg<Action<RazQLModel<QueryCriteria>>>();
+                var model = new RazQLModel<QueryCriteria>
                 {
-                    Model = Substitute.For<IDataBinder<SqlCriteria>>()
+                    Model = Substitute.For<IDataBinder<QueryCriteria>>()
                 };
                 initializer(model);
                 initializedModel = model;
@@ -45,21 +45,17 @@ public class SqlGeneratorTests
         Assert.Same(binder, initializedModel?.Model);
         Assert.Same(parameters, result.Parameters);
         bindingFactory.Received(1).Create(criteria);
-        await templateCache.Received(1).GetTemplateAsync<SqlCriteria>(descriptor, cancellation.Token);
-        await template.Received(1).RunAsync(Arg.Any<Action<RazQLModel<SqlCriteria>>>());
+        await templateCache.Received(1).GetTemplateAsync(descriptor, cancellation.Token);
+        await template.Received(1).RunAsync(Arg.Any<Action<RazQLModel<QueryCriteria>>>());
     }
 
-    private static QueryDescriptor CreateDescriptor() =>
+    private static QueryDescriptor<ISqlMapper, QueryCriteria, IEnumerable<QueryResult>> CreateDescriptor() =>
         QueryDescriptor.ForExpression<ISqlMapper, QueryCriteria, QueryResult>(mapper => mapper.FindAsync);
-}
-
-public sealed class SqlCriteria
-{
-    public string Name { get; init; } = "";
 }
 
 [RazQLMapper]
 public interface ISqlMapper
 {
     Task<IEnumerable<QueryResult>> FindAsync(QueryCriteria criteria, CancellationToken cancellationToken);
+    Task<QueryResult> FindOneAsync(QueryCriteria criteria, CancellationToken cancellationToken);
 }

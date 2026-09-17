@@ -13,12 +13,14 @@ public class QueryDescriptorTests
             mapper => mapper.LoadAsync;
 
         var descriptor = QueryDescriptor.ForExpression<IAttributedMapper, string, DescriptorResult>(expression);
+        QueryDescriptor metadata = descriptor;
 
+        Assert.IsType<QueryDescriptor<IAttributedMapper, string, DescriptorResult>>(descriptor);
+        Assert.Same(descriptor, metadata);
         Assert.Equal(typeof(IAttributedMapper), descriptor.MapperType);
         Assert.Equal(typeof(IAttributedMapper).GetMethod(nameof(IAttributedMapper.LoadAsync)), descriptor.QueryMethod);
         Assert.Equal(typeof(string), descriptor.CriteriaType);
         Assert.Equal(typeof(DescriptorResult), descriptor.ResultType);
-        Assert.Equal(QueryDescriptor.QueryResultShape.SingleOrDefault, descriptor.ResultShape);
         Assert.Equal("Fetch", descriptor.TemplateName);
         Assert.Equal(["Artists"], descriptor.GetQueryGroupCandidates());
         Assert.Equal(["Fetch"], descriptor.GetQueryNameCandidates());
@@ -36,8 +38,8 @@ public class QueryDescriptorTests
         Assert.Equal(typeof(IResultMapper), descriptor.MapperType);
         Assert.Equal(typeof(IResultMapper).GetMethod(nameof(IResultMapper.LoadManyAsync)), descriptor.QueryMethod);
         Assert.Equal(typeof(string), descriptor.CriteriaType);
-        Assert.Equal(typeof(DescriptorResult), descriptor.ResultType);
-        Assert.Equal(QueryDescriptor.QueryResultShape.Many, descriptor.ResultShape);
+        Assert.IsType<QueryDescriptor<IResultMapper, string, IEnumerable<DescriptorResult>>>(descriptor);
+        Assert.Equal(typeof(IEnumerable<DescriptorResult>), descriptor.ResultType);
     }
 
     [Fact]
@@ -249,6 +251,32 @@ public class QueryDescriptorTests
         AssertUnsupportedResult<IEnumerable<Task<DescriptorResult>>>(
             mapper => mapper.NestedTaskCollectionAsync,
             "cannot be Task");
+    }
+
+    [Fact]
+    public void ForExpression_RejectsSequenceMethodPresentedAsScalarResult()
+    {
+        Expression<Func<IResultMapper, Func<string, CancellationToken, Task<IEnumerable<DescriptorResult>>>>> expression =
+            mapper => mapper.LoadManyAsync;
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            QueryDescriptor.ForExpression<IResultMapper, string, IEnumerable<DescriptorResult>>(expression));
+
+        Assert.Equal("expression", exception.ParamName);
+        Assert.Contains("does not match", exception.Message);
+    }
+
+    [Fact]
+    public void ForExpression_RejectsCriteriaVarianceThatDoesNotMatchTheMethod()
+    {
+        Expression<Func<IContravariantCriteriaMapper, Func<string, CancellationToken, Task<DescriptorResult>>>> expression =
+            mapper => mapper.FindAsync;
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            QueryDescriptor.ForExpression<IContravariantCriteriaMapper, string, DescriptorResult>(expression));
+
+        Assert.Equal("expression", exception.ParamName);
+        Assert.Contains("does not match", exception.Message);
     }
 
     [Fact]
@@ -535,3 +563,9 @@ public interface IHiddenMethodMapper : IBaseAttributedMethodMapper
 }
 
 public sealed record DescriptorResult;
+
+[RazQLMapper]
+public interface IContravariantCriteriaMapper
+{
+    Task<DescriptorResult> FindAsync(object criteria, CancellationToken cancellationToken);
+}

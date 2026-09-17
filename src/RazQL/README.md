@@ -4,7 +4,7 @@
 
 ## Core Pipeline
 
-A `QueryDescriptor` identifies a mapper method, its criteria and result types, result shape, selected source loader, and template naming candidates. The default runtime pipeline:
+`QueryDescriptor<TMapper, TCriteria, TResult>` identifies a mapper method, its criteria, the full value type returned by its task, selected source loader, and template naming candidates. For `Task<IEnumerable<TElement>>`, its result type is `IEnumerable<TElement>`. Its non-generic `QueryDescriptor` base exposes metadata to source loaders; the typed descriptor flows through cache, SQL generation, and execution. Create one with `QueryDescriptor.ForExpression<TMapper, TCriteria, TElement>(mapper => mapper.FindAsync)`. The default runtime pipeline:
 
 1. Resolves source through `ITemplateSourceLoaderResolver`.
 2. Compiles and caches the Razor template through `ITemplateCache`.

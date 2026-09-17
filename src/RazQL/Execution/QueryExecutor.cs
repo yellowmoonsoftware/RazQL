@@ -13,7 +13,7 @@ public sealed class QueryExecutor(
     IExecutionAdapter executorAdapter) : IQueryExecutor
 {
     /// <inheritdoc />
-    public async Task<IEnumerable<TResult>> ExecuteAsync<TCriteria, TResult>(QueryDescriptor descriptor, TCriteria criteria,
+    public async Task<IEnumerable<TResult>> ExecuteAsync<TMapper, TCriteria, TResult>(QueryDescriptor<TMapper, TCriteria, IEnumerable<TResult>> descriptor, TCriteria criteria,
         CancellationToken cancellationToken = default)
     {
         var generatedQuery = await sqlGenerator.ApplyCriteriaAsync(descriptor, criteria, cancellationToken);
@@ -23,7 +23,7 @@ public sealed class QueryExecutor(
     }
 
     /// <inheritdoc />
-    public async Task<TResult?> ExecuteSingleOrDefaultAsync<TCriteria, TResult>(QueryDescriptor descriptor, TCriteria criteria,
+    public async Task<TResult?> ExecuteAsync<TMapper, TCriteria, TResult>(QueryDescriptor<TMapper, TCriteria, TResult> descriptor, TCriteria criteria,
         CancellationToken cancellationToken = default)
     {
         var generatedQuery = await sqlGenerator.ApplyCriteriaAsync(descriptor, criteria, cancellationToken);

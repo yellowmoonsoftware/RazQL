@@ -30,8 +30,8 @@ public class GeneratedMapperTests
         var cancellationToken = new CancellationToken(canceled: false);
         var expected = new[] { new TestResult(1, "Test Result") };
         var executor = Substitute.For<IQueryExecutor>();
-        executor.ExecuteAsync<TestCriteria, TestResult>(
-                Arg.Any<QueryDescriptor>(),
+        executor.ExecuteAsync<ITestMapper, TestCriteria, TestResult>(
+                Arg.Any<QueryDescriptor<ITestMapper, TestCriteria, IEnumerable<TestResult>>>(),
                 criteria,
                 cancellationToken)
             .Returns(expected);
@@ -40,10 +40,35 @@ public class GeneratedMapperTests
         var result = await mapper.FindAsync(criteria, cancellationToken);
 
         Assert.Same(expected, result);
-        await executor.Received(1).ExecuteAsync<TestCriteria, TestResult>(
-            Arg.Is<QueryDescriptor>(descriptor =>
+        await executor.Received(1).ExecuteAsync<ITestMapper, TestCriteria, TestResult>(
+            Arg.Is<QueryDescriptor<ITestMapper, TestCriteria, IEnumerable<TestResult>>>(descriptor =>
                 descriptor.MapperType == typeof(ITestMapper) &&
                 descriptor.QueryMethod.Name == nameof(ITestMapper.FindAsync)),
+            criteria,
+            cancellationToken);
+    }
+
+    [Fact]
+    public async Task GeneratedMapper_DelegatesSingleResultUsingOverloadedExecutor()
+    {
+        var criteria = new TestCriteria();
+        var cancellationToken = new CancellationToken(canceled: false);
+        var expected = new TestResult(1, "Test Result");
+        var executor = Substitute.For<IQueryExecutor>();
+        executor.ExecuteAsync<ISingleTestMapper, TestCriteria, TestResult?>(
+                Arg.Any<QueryDescriptor<ISingleTestMapper, TestCriteria, TestResult?>>(),
+                criteria,
+                cancellationToken)
+            .Returns(expected);
+        var mapper = CreateMapper<ISingleTestMapper>(executor);
+
+        var result = await mapper.FindOneAsync(criteria, cancellationToken);
+
+        Assert.Same(expected, result);
+        await executor.Received(1).ExecuteAsync<ISingleTestMapper, TestCriteria, TestResult?>(
+            Arg.Is<QueryDescriptor<ISingleTestMapper, TestCriteria, TestResult?>>(descriptor =>
+                descriptor.MapperType == typeof(ISingleTestMapper) &&
+                descriptor.QueryMethod.Name == nameof(ISingleTestMapper.FindOneAsync)),
             criteria,
             cancellationToken);
     }
@@ -56,8 +81,8 @@ public class GeneratedMapperTests
         var templateCache = Substitute.For<ITemplateCache>();
         var compiledTemplate = Substitute.For<IRazorEngineCompiledTemplate<RazQLModel<TestCriteria>>>();
         var compilation = new TaskCompletionSource<IRazorEngineCompiledTemplate<RazQLModel<TestCriteria>>>();
-        templateCache.GetTemplateAsync<TestCriteria>(
-                Arg.Any<QueryDescriptor>(),
+        templateCache.GetTemplateAsync<ITestMapper, TestCriteria, IEnumerable<TestResult>>(
+                Arg.Any<QueryDescriptor<ITestMapper, TestCriteria, IEnumerable<TestResult>>>(),
                 cancellationToken)
             .Returns(compilation.Task);
         var mapper = CreateMapper<ITestMapper>(executor);
@@ -70,8 +95,8 @@ public class GeneratedMapperTests
         Assert.False(tasks[0].IsCompleted);
         compilation.SetResult(compiledTemplate);
         await tasks[0];
-        await templateCache.Received(1).GetTemplateAsync<TestCriteria>(
-            Arg.Is<QueryDescriptor>(descriptor =>
+        await templateCache.Received(1).GetTemplateAsync<ITestMapper, TestCriteria, IEnumerable<TestResult>>(
+            Arg.Is<QueryDescriptor<ITestMapper, TestCriteria, IEnumerable<TestResult>>>(descriptor =>
                 descriptor.MapperType == typeof(ITestMapper) &&
                 descriptor.QueryMethod.Name == nameof(ITestMapper.FindAsync)),
             cancellationToken);
@@ -98,6 +123,13 @@ public interface ITestMapper
     Task<IEnumerable<TestResult>> FindAsync(
         TestCriteria criteria,
         CancellationToken cancellationToken);
+}
+
+[RazQLMapper]
+public interface ISingleTestMapper
+{
+    [RazQLQuery("select 1")]
+    Task<TestResult?> FindOneAsync(TestCriteria criteria, CancellationToken cancellationToken);
 }
 
 public sealed record TestCriteria;

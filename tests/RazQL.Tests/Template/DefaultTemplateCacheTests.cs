@@ -30,7 +30,7 @@ public class DefaultTemplateCacheTests
             resolver,
             Substitute.For<ILogger<DefaultTemplateCache>>());
 
-        var result = await cache.GetTemplateAsync<string>(descriptor, cancellation.Token);
+        var result = await cache.GetTemplateAsync(descriptor, cancellation.Token);
 
         Assert.Same(compiledTemplate, result);
         resolver.Received(1).Resolve(descriptor);
@@ -62,8 +62,8 @@ public class DefaultTemplateCacheTests
             resolver,
             Substitute.For<ILogger<DefaultTemplateCache>>());
 
-        var first = await cache.GetTemplateAsync<string>(firstDescriptor, CancellationToken.None);
-        var second = await cache.GetTemplateAsync<string>(equivalentDescriptor, CancellationToken.None);
+        var first = await cache.GetTemplateAsync(firstDescriptor, CancellationToken.None);
+        var second = await cache.GetTemplateAsync(equivalentDescriptor, CancellationToken.None);
 
         Assert.Same(first, second);
         resolver.Received(1).Resolve(firstDescriptor);
@@ -74,6 +74,6 @@ public class DefaultTemplateCacheTests
             CancellationToken.None);
     }
 
-    private static QueryDescriptor CreateDescriptor() =>
+    private static QueryDescriptor<IAttributedMapper, string, DescriptorResult> CreateDescriptor() =>
         QueryDescriptor.ForExpression<IAttributedMapper, string, DescriptorResult>(mapper => mapper.LoadAsync);
 }

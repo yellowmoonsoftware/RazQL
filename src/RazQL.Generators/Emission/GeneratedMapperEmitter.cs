@@ -88,7 +88,13 @@ internal static class GeneratedMapperEmitter
         MapperMethodModel method,
         int index)
     {
-        source.Append("    private static readonly global::RazQL.Template.QueryDescriptor QueryDescriptor_")
+        source.Append("    private static readonly global::RazQL.Template.QueryDescriptor<")
+            .Append(DisplayType(mapper.MapperInterface))
+            .Append(", ")
+            .Append(DisplayType(method.CriteriaType!))
+            .Append(", ");
+        AppendTaskResultType(source, method);
+        source.Append("> QueryDescriptor_")
             .Append(index.ToString("D3", CultureInfo.InvariantCulture))
             .AppendLine(" =")
             .Append("        global::RazQL.Template.QueryDescriptor.ForExpression<")
@@ -101,6 +107,21 @@ internal static class GeneratedMapperEmitter
             .Append(EscapeIdentifier(method.Method.Name))
             .AppendLine(");")
             .AppendLine();
+    }
+
+    private static void AppendTaskResultType(StringBuilder source, MapperMethodModel method)
+    {
+        if (method.ResultShape == MapperMethodModel.QueryResultShape.Many)
+        {
+            source.Append("global::System.Collections.Generic.IEnumerable<");
+        }
+
+        source.Append(DisplayType(method.ResultType!));
+
+        if (method.ResultShape == MapperMethodModel.QueryResultShape.Many)
+        {
+            source.Append('>');
+        }
     }
 
     private static void AppendTemplatePreloader(
@@ -119,9 +140,7 @@ internal static class GeneratedMapperEmitter
 
         for (var index = 0; index < methods.Count; index++)
         {
-            source.Append("            templateCache.GetTemplateAsync<")
-                .Append(DisplayType(methods[index].CriteriaType!))
-                .AppendLine(">(")
+            source.AppendLine("            templateCache.GetTemplateAsync(")
                 .Append("                QueryDescriptor_")
                 .Append(index.ToString("D3", CultureInfo.InvariantCulture))
                 .AppendLine(",")
@@ -153,15 +172,7 @@ internal static class GeneratedMapperEmitter
             .Append(' ')
             .Append(EscapeIdentifier(cancellationTokenParameter.Name))
             .AppendLine(") =>")
-            .Append("        _executor.")
-            .Append(method.ResultShape == MapperMethodModel.QueryResultShape.Many
-                ? "ExecuteAsync"
-                : "ExecuteSingleOrDefaultAsync")
-            .Append('<')
-            .Append(DisplayType(method.CriteriaType!))
-            .Append(", ")
-            .Append(DisplayType(method.ResultType!))
-            .AppendLine(">(")
+            .AppendLine("        _executor.ExecuteAsync(")
             .Append("            QueryDescriptor_")
             .Append(index.ToString("D3", CultureInfo.InvariantCulture))
             .AppendLine(",")

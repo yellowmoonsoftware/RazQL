@@ -13,7 +13,7 @@ public sealed class DefaultTemplateCache(IRazorEngine razorEngine, ITemplateSour
     private readonly ConcurrentDictionary<QueryDescriptor, Task<object>> _templates = new();
 
     /// <inheritdoc />
-    public async Task<IRazorEngineCompiledTemplate<RazQLModel<TCriteria>>> GetTemplateAsync<TCriteria>(QueryDescriptor descriptor, CancellationToken cancellationToken)
+    public async Task<IRazorEngineCompiledTemplate<RazQLModel<TCriteria>>> GetTemplateAsync<TMapper, TCriteria, TResult>(QueryDescriptor<TMapper, TCriteria, TResult> descriptor, CancellationToken cancellationToken)
     {
         var t = await _templates.GetOrAdd(descriptor, static async (qryDesc, args) =>
         {

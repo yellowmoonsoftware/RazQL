@@ -16,7 +16,7 @@ public class QueryExecutorTests
         await using var dataSource = new RecordingDataSource();
         var sqlGenerator = Substitute.For<ISqlGenerator>();
         var executionAdapter = Substitute.For<IExecutionAdapter>();
-        var descriptor = CreateDescriptor();
+        var descriptor = CreateManyDescriptor();
         var criteria = new QueryCriteria { Name = "Tom" };
         var parameters = Substitute.For<IParameterBag>();
         var generatedQuery = new ParameterizedQueryResult("select id, name from artist", parameters);
@@ -35,7 +35,7 @@ public class QueryExecutorTests
             .Returns(expected);
         var executor = new QueryExecutor(dataSource, sqlGenerator, executionAdapter);
 
-        var result = await executor.ExecuteAsync<QueryCriteria, QueryResult>(
+        var result = await executor.ExecuteAsync<ISqlMapper, QueryCriteria, QueryResult>(
             descriptor,
             criteria,
             cancellation.Token);
@@ -51,12 +51,12 @@ public class QueryExecutorTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task ExecuteSingleOrDefaultAsync_ReturnsAdapterResult(bool hasResult)
+    public async Task ExecuteAsync_ReturnsSingleOrDefaultAdapterResult(bool hasResult)
     {
         await using var dataSource = new RecordingDataSource();
         var sqlGenerator = Substitute.For<ISqlGenerator>();
         var executionAdapter = Substitute.For<IExecutionAdapter>();
-        var descriptor = CreateDescriptor();
+        var descriptor = CreateSingleDescriptor();
         var criteria = new QueryCriteria();
         var parameters = Substitute.For<IParameterBag>();
         var generatedQuery = new ParameterizedQueryResult("select id, name from artist", parameters);
@@ -70,7 +70,7 @@ public class QueryExecutorTests
             .Returns(expected);
         var executor = new QueryExecutor(dataSource, sqlGenerator, executionAdapter);
 
-        var result = await executor.ExecuteSingleOrDefaultAsync<QueryCriteria, QueryResult>(
+        var result = await executor.ExecuteAsync<ISqlMapper, QueryCriteria, QueryResult>(
             descriptor,
             criteria,
             CancellationToken.None);
@@ -83,8 +83,11 @@ public class QueryExecutorTests
             CancellationToken.None);
     }
 
-    private static QueryDescriptor CreateDescriptor() =>
+    private static QueryDescriptor<ISqlMapper, QueryCriteria, IEnumerable<QueryResult>> CreateManyDescriptor() =>
         QueryDescriptor.ForExpression<ISqlMapper, QueryCriteria, QueryResult>(mapper => mapper.FindAsync);
+
+    private static QueryDescriptor<ISqlMapper, QueryCriteria, QueryResult> CreateSingleDescriptor() =>
+        QueryDescriptor.ForExpression<ISqlMapper, QueryCriteria, QueryResult>(mapper => mapper.FindOneAsync);
 }
 
 public sealed class QueryCriteria

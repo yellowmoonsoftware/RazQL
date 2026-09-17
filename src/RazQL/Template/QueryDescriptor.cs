@@ -8,24 +8,10 @@ using RazQL.Internal;
 namespace RazQL.Template;
 
 /// <summary>
-/// Describes one mapper method and the effective conventions used to locate, compile, and execute its query.
+/// Provides non-generic metadata for a mapper query and the conventions used to locate its template.
 /// </summary>
-public sealed record QueryDescriptor
+public abstract record QueryDescriptor
 {
-    /// <summary>Describes whether a mapped query returns one logical value or a sequence.</summary>
-    public enum QueryResultShape
-    {
-        /// <summary>The query returns zero or one result.</summary>
-        SingleOrDefault,
-
-        /// <summary>The query returns zero or more results.</summary>
-        Many
-    }
-
-    private sealed record ResultTypeDescriptor(
-        Type MappedResultType,
-        QueryResultShape ResultShape = QueryResultShape.SingleOrDefault);
-
     const string QueryMethodAsyncSuffix = "Async";
 
     private static readonly ReadOnlySet<Type> EnumerableAllowList = new HashSet<Type>
@@ -34,18 +20,21 @@ public sealed record QueryDescriptor
         typeof(byte[])
     }.AsReadOnly();
 
-    private QueryDescriptor(
+    /// <summary>Initializes the metadata shared by typed query descriptors.</summary>
+    /// <param name="MapperType">The decorated mapper interface.</param>
+    /// <param name="QueryMethod">The mapped query method.</param>
+    /// <param name="CriteriaType">The criteria type declared by the method.</param>
+    /// <param name="ResultType">The value type returned by the query method's task.</param>
+    protected QueryDescriptor(
         Type MapperType,
         MethodInfo QueryMethod,
         Type CriteriaType,
-        Type ResultType,
-        QueryResultShape ResultShape)
+        Type ResultType)
     {
         this.MapperType = MapperType;
         this.QueryMethod = QueryMethod;
         this.CriteriaType = CriteriaType;
         this.ResultType = ResultType;
-        this.ResultShape = ResultShape;
 
         var mapperTemplateSource = GetTemplateSourceAttribute(MapperType);
         var methodTemplateSource = GetTemplateSourceAttribute(QueryMethod);
@@ -69,11 +58,8 @@ public sealed record QueryDescriptor
     /// <summary>Gets the method's criteria type.</summary>
     public Type CriteriaType { get; }
 
-    /// <summary>Gets the individual result type mapped by the execution provider.</summary>
+    /// <summary>Gets the value type returned by the query method's task, including a sequence type when applicable.</summary>
     public Type ResultType { get; }
-
-    /// <summary>Gets the result cardinality shape used for execution.</summary>
-    public QueryResultShape ResultShape { get; }
 
     /// <summary>Gets the concrete source-loader type selected for the query.</summary>
     public Type QuerySourceLoaderType { get; }
@@ -107,32 +93,33 @@ public sealed record QueryDescriptor
     /// <typeparam name="TCriteria">The method criteria type.</typeparam>
     /// <typeparam name="TElement">The mapped sequence element type.</typeparam>
     /// <param name="expression">An expression that directly selects the mapper method group.</param>
-    /// <returns>A validated query descriptor.</returns>
+    /// <returns>A validated, strongly typed query descriptor.</returns>
     /// <exception cref="ArgumentException">The mapper, method, parameter, result, or expression shape is invalid.</exception>
-    public static QueryDescriptor ForExpression<TMapper, TCriteria, TElement>(
+    public static QueryDescriptor<TMapper, TCriteria, IEnumerable<TElement>> ForExpression<TMapper, TCriteria, TElement>(
         Expression<Func<TMapper, Func<TCriteria, CancellationToken, Task<IEnumerable<TElement>>>>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
 
-        return ForMethodGroup<TMapper>(expression);
+        return ForMethodGroup<TMapper, TCriteria, IEnumerable<TElement>>(expression, expectsSequence: true);
     }
 
     /// <summary>Creates a descriptor for a mapper method returning zero or one value.</summary>
     /// <typeparam name="TMapper">The decorated, closed mapper interface.</typeparam>
     /// <typeparam name="TCriteria">The method criteria type.</typeparam>
-    /// <typeparam name="TResult">The mapped result type.</typeparam>
+    /// <typeparam name="TResult">The query method's task result type.</typeparam>
     /// <param name="expression">An expression that directly selects the mapper method group.</param>
-    /// <returns>A validated query descriptor.</returns>
+    /// <returns>A validated, strongly typed query descriptor.</returns>
     /// <exception cref="ArgumentException">The mapper, method, parameter, result, or expression shape is invalid.</exception>
-    public static QueryDescriptor ForExpression<TMapper, TCriteria, TResult>(
+    public static QueryDescriptor<TMapper, TCriteria, TResult> ForExpression<TMapper, TCriteria, TResult>(
         Expression<Func<TMapper, Func<TCriteria, CancellationToken, Task<TResult>>>> expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
 
-        return ForMethodGroup<TMapper>(expression);
+        return ForMethodGroup<TMapper, TCriteria, TResult>(expression, expectsSequence: false);
     }
 
-    private static QueryDescriptor ForMethodGroup<TMapper>(LambdaExpression expression)
+    private static QueryDescriptor<TMapper, TCriteria, TResult> ForMethodGroup<TMapper, TCriteria, TResult>(
+        LambdaExpression expression, bool expectsSequence)
     {
         var mapperType = typeof(TMapper);
         ValidateMapperType(mapperType);
@@ -150,7 +137,15 @@ public sealed record QueryDescriptor
             methodCallExpression.Arguments[1] == expression.Parameters[0] &&
             !targetMethod.IsStatic)
         {
-            return ForMethod(mapperType, targetMethod);
+            var (criteriaType, resultType, returnsSequence) = ForMethod(mapperType, targetMethod);
+            if (criteriaType != typeof(TCriteria) || resultType != typeof(TResult) || returnsSequence != expectsSequence)
+            {
+                throw new ArgumentException(
+                    "Expression method signature does not match the descriptor criteria, result type, or sequence shape.",
+                    nameof(expression));
+            }
+
+            return new QueryDescriptor<TMapper, TCriteria, TResult>(targetMethod);
         }
 
         throw new ArgumentException(
@@ -178,7 +173,8 @@ public sealed record QueryDescriptor
         }
     }
 
-    private static QueryDescriptor ForMethod(Type mapperType, MethodInfo queryMethod)
+    private static (Type CriteriaType, Type ResultType, bool ReturnsSequence) ForMethod(
+        Type mapperType, MethodInfo queryMethod)
     {
         ArgumentNullException.ThrowIfNull(queryMethod);
 
@@ -198,9 +194,9 @@ public sealed record QueryDescriptor
 
         var criteriaType = GetCriteriaType(queryMethod);
 
-        var (mappedResultType, resultShape) = GetResultType(queryMethod);
+        var (resultType, returnsSequence) = GetResultType(queryMethod);
 
-        return new QueryDescriptor(mapperType, queryMethod, criteriaType, mappedResultType, resultShape);
+        return (criteriaType, resultType, returnsSequence);
     }
 
     private static Type GetCriteriaType(MethodInfo queryMethod)
@@ -229,7 +225,7 @@ public sealed record QueryDescriptor
         return criteriaParam.ParameterType;
     }
 
-    private static ResultTypeDescriptor GetResultType(MethodInfo queryMethod)
+    private static (Type ResultType, bool ReturnsSequence) GetResultType(MethodInfo queryMethod)
     {
         if (!queryMethod.ReturnType.IsGenericType ||
             queryMethod.ReturnType.GetGenericTypeDefinition() != typeof(Task<>))
@@ -239,20 +235,18 @@ public sealed record QueryDescriptor
 
         var taskResultType = queryMethod.ReturnType.GetGenericArguments()[0];
 
-        // IEnumerable<T> result; return T
+        // Validate the mapped element, but retain the complete Task<T> value type.
         if (taskResultType.IsGenericType && taskResultType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
         {
             var mappedResultType = taskResultType.GetGenericArguments()[0];
             ValidateMappedResultType(queryMethod, mappedResultType);
 
-            return new ResultTypeDescriptor(
-                mappedResultType,
-                QueryResultShape.Many);
+            return (taskResultType, true);
         }
 
         ValidateMappedResultType(queryMethod, taskResultType);
 
-        return new ResultTypeDescriptor(taskResultType);
+        return (taskResultType, false);
     }
 
     private static void ValidateMappedResultType(MethodInfo queryMethod, Type mappedResultType)
@@ -337,5 +331,17 @@ public sealed record QueryDescriptor
         return string.IsNullOrWhiteSpace(templateLocation)
             ? null
             : templateLocation.Trim();
+    }
+}
+
+/// <summary>Describes a mapper query with compile-time mapper, criteria, and task result types.</summary>
+/// <typeparam name="TMapper">The decorated mapper interface that owns the query.</typeparam>
+/// <typeparam name="TCriteria">The query criteria type.</typeparam>
+/// <typeparam name="TResult">The query method's task result type.</typeparam>
+public sealed record QueryDescriptor<TMapper, TCriteria, TResult> : QueryDescriptor
+{
+    internal QueryDescriptor(MethodInfo queryMethod)
+        : base(typeof(TMapper), queryMethod, typeof(TCriteria), typeof(TResult))
+    {
     }
 }
