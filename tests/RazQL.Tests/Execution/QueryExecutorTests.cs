@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using RazQL.Binding;
 using RazQL.Execution;
@@ -33,7 +34,7 @@ public class QueryExecutorTests
                 Arg.Any<ParameterizedQueryResult>(),
                 cancellation.Token)
             .Returns(expected);
-        var executor = new QueryExecutor(dataSource, sqlGenerator, executionAdapter);
+        var executor = new QueryExecutor(dataSource, sqlGenerator, executionAdapter, Substitute.For<ILogger<QueryExecutor>>());
 
         var result = await executor.ExecuteAsync<ISqlMapper, QueryCriteria, QueryResult>(
             descriptor,
@@ -68,7 +69,7 @@ public class QueryExecutorTests
                 Arg.Any<ParameterizedQueryResult>(),
                 CancellationToken.None)
             .Returns(expected);
-        var executor = new QueryExecutor(dataSource, sqlGenerator, executionAdapter);
+        var executor = new QueryExecutor(dataSource, sqlGenerator, executionAdapter, Substitute.For<ILogger<QueryExecutor>>());
 
         var result = await executor.ExecuteAsync<ISqlMapper, QueryCriteria, QueryResult>(
             descriptor,

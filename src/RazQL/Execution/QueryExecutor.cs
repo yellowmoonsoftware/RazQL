@@ -1,4 +1,5 @@
 using System.Data.Common;
+using Microsoft.Extensions.Logging;
 using RazQL.Template;
 
 namespace RazQL.Execution;
@@ -7,10 +8,11 @@ namespace RazQL.Execution;
 /// <param name="dataSource">The provider-specific database data source.</param>
 /// <param name="sqlGenerator">The SQL generator.</param>
 /// <param name="executorAdapter">The adapter that hands off execution to a specific provider.</param>
-public sealed class QueryExecutor(
+public sealed partial class QueryExecutor(
     DbDataSource dataSource,
     ISqlGenerator sqlGenerator,
-    IExecutionAdapter executorAdapter) : IQueryExecutor
+    IExecutionAdapter executorAdapter,
+    ILogger<QueryExecutor> logger) : IQueryExecutor
 {
     /// <inheritdoc />
     public async Task<IEnumerable<TResult>> ExecuteAsync<TMapper, TCriteria, TResult>(QueryDescriptor<TMapper, TCriteria, IEnumerable<TResult>> descriptor, TCriteria criteria,
@@ -19,6 +21,7 @@ public sealed class QueryExecutor(
         var generatedQuery = await sqlGenerator.ApplyCriteriaAsync(descriptor, criteria, cancellationToken);
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        LogExecution(descriptor);
         return await executorAdapter.QueryAsync<TResult>(connection, generatedQuery, cancellationToken);
     }
 
@@ -28,6 +31,10 @@ public sealed class QueryExecutor(
     {
         var generatedQuery = await sqlGenerator.ApplyCriteriaAsync(descriptor, criteria, cancellationToken);
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        LogExecution(descriptor);
         return await executorAdapter.QuerySingleOrDefaultAsync<TResult>(connection, generatedQuery, cancellationToken);
     }
+
+    [LoggerMessage(LogLevel.Information, "Executing query: {descriptor}")]
+    private partial void LogExecution(QueryDescriptor descriptor);
 }

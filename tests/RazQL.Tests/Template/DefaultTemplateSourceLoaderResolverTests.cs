@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using NSubstitute;
 using RazQL.Template;
 
 namespace RazQL.Tests.Template;
@@ -7,7 +9,7 @@ public class DefaultTemplateSourceLoaderResolverTests
     [Fact]
     public void Resolve_UsesResourceLoaderByDefault()
     {
-        var resourceLoader = new ResourceTemplateSourceLoader();
+        var resourceLoader = new ResourceTemplateSourceLoader(Substitute.For<ILogger<ResourceTemplateSourceLoader>>());
         var resolver = new DefaultTemplateSourceLoaderResolver(
             [resourceLoader]);
         var descriptor = QueryDescriptor.ForExpression<IDefaultLoaderMapper, string, DescriptorResult>(
@@ -50,7 +52,7 @@ public class DefaultTemplateSourceLoaderResolverTests
     [Fact]
     public void Resolve_UsesQueryAttributeTemplateSourceLoader()
     {
-        var querySourceLoader = new QueryAttributeTemplateSourceLoader();
+        var querySourceLoader = new QueryAttributeTemplateSourceLoader(Substitute.For<ILogger<QueryAttributeTemplateSourceLoader>>());
         var resolver = new DefaultTemplateSourceLoaderResolver(
             [querySourceLoader]);
         var descriptor = QueryDescriptor.ForExpression<IInlineLoaderMapper, string, DescriptorResult>(

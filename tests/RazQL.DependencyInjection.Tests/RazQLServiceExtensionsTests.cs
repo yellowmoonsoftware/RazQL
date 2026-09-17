@@ -63,6 +63,31 @@ public class RazQLServiceExtensionsTests
     }
 
     [Fact]
+    public void AddRazQL_RegistersLoggingForDefaultServices()
+    {
+        var services = new ServiceCollection();
+        services.AddRazQL(builder => builder.UsingExecutionAdapter<ReplacementExecutionAdapter>());
+        using var provider = services.BuildServiceProvider();
+
+        Assert.NotNull(provider.GetRequiredService<ILoggerFactory>());
+        Assert.NotNull(provider.GetRequiredService<ILogger<DefaultTemplateCache>>());
+        Assert.NotNull(provider.GetRequiredService<ILogger<SqlGenerator>>());
+        Assert.IsType<DefaultTemplateCache>(provider.GetRequiredService<ITemplateCache>());
+        Assert.IsType<SqlGenerator>(provider.GetRequiredService<ISqlGenerator>());
+    }
+
+    [Fact]
+    public void AddRazQL_PreservesExistingLoggerFactory()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+        services.AddRazQL(builder => builder.UsingExecutionAdapter<ReplacementExecutionAdapter>());
+        using var provider = services.BuildServiceProvider();
+
+        Assert.Same(NullLoggerFactory.Instance, provider.GetRequiredService<ILoggerFactory>());
+    }
+
+    [Fact]
     public void AddRazQL_RegistersBuiltInLoadersAsSharedSingletons()
     {
         var services = new ServiceCollection();
@@ -121,8 +146,6 @@ public class RazQLServiceExtensionsTests
     public void AddRazQL_RegistersBindingFactoriesAndConfiguredImmutableOptions()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<ILogger<SqlGenerator>>(NullLogger<SqlGenerator>.Instance);
-        services.AddSingleton<ILogger<DefaultTemplateCache>>(NullLogger<DefaultTemplateCache>.Instance);
         services.AddRazQL(builder => builder
             .UsingExecutionAdapter<ReplacementExecutionAdapter>()
             .ConfigureDataBinding(options => options.WithOrderByDirectionClause(OrderByDirection.Asc, "UP"))

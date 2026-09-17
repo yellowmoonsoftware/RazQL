@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace RazQL.Template;
 
 /// <summary>Loads query templates from the application's output directory.</summary>
@@ -5,11 +7,11 @@ namespace RazQL.Template;
 /// Templates are resolved beneath <c>[TemplateLocation/]SqlTemplates/{Mapper}/{Query}.sql.cshtml</c>.
 /// Template locations must remain relative to <see cref="AppContext.BaseDirectory"/>.
 /// </remarks>
-public sealed class FileSystemTemplateSourceLoader : ITemplateSourceLoader
+public sealed partial class FileSystemTemplateSourceLoader(ILogger<FileSystemTemplateSourceLoader> logger) : ITemplateSourceLoader
 {
     private const string TemplateDirectoryName = "SqlTemplates";
 
-    private IEnumerable<string> GetPathCandidates(QueryDescriptor queryDescriptor)
+    private static IEnumerable<string> GetPathCandidates(QueryDescriptor queryDescriptor)
     {
         var templateRoot = GetTemplateRoot(queryDescriptor);
 
@@ -53,10 +55,17 @@ public sealed class FileSystemTemplateSourceLoader : ITemplateSourceLoader
         var templateFilePath = filePathCandidates
             .SingleOrDefault(File.Exists);
 
-        return templateFilePath is null
-            ? throw new FileNotFoundException(
+        if (templateFilePath is null)
+        {
+            throw new FileNotFoundException(
                 $"Could not find template source file for query method [{queryDescriptor.MapperType.Name}.{queryDescriptor.QueryMethod.Name}] at any of the following locations: " +
-                $"[\n  {string.Join(",\n  ", filePathCandidates)}\n]")
-            : File.ReadAllTextAsync(templateFilePath, cancellationToken);
+                $"[\n  {string.Join(",\n  ", filePathCandidates)}\n]");
+        }
+
+        LogTemplateLoadAttempt(queryDescriptor, templateFilePath);
+        return File.ReadAllTextAsync(templateFilePath, cancellationToken);
     }
+
+    [LoggerMessage(LogLevel.Information, "Attempting to load template for [{Descriptor}] from file: [{TemplateFilePath}]")]
+    private partial void LogTemplateLoadAttempt(QueryDescriptor descriptor, string templateFilePath);
 }

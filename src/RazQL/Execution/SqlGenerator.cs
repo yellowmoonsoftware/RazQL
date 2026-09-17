@@ -8,7 +8,7 @@ namespace RazQL.Execution;
 /// <param name="templateCache">The compiled-template cache.</param>
 /// <param name="dataBinderContextFactory">Creates an independent binding context for each query.</param>
 /// <param name="logger">The logger used for generated SQL diagnostics.</param>
-public sealed class SqlGenerator(ITemplateCache templateCache, IDataBinderContextFactory dataBinderContextFactory, ILogger<SqlGenerator> logger) : ISqlGenerator
+public sealed partial class SqlGenerator(ITemplateCache templateCache, IDataBinderContextFactory dataBinderContextFactory, ILogger<SqlGenerator> logger) : ISqlGenerator
 {
     /// <inheritdoc />
     public async Task<ParameterizedQueryResult> ApplyCriteriaAsync<TMapper, TCriteria, TResult>(QueryDescriptor<TMapper, TCriteria, TResult> descriptor, TCriteria criteria, CancellationToken cancellationToken = default)
@@ -19,7 +19,10 @@ public sealed class SqlGenerator(ITemplateCache templateCache, IDataBinderContex
         {
             m.Model = dataBinder;
         });
-        logger.LogDebug("{GeneratedSql}", sql);
+        LogGenerateSql(sql);
         return new ParameterizedQueryResult(sql, dbParams);
     }
+
+    [LoggerMessage(LogLevel.Debug, "Generated SQL: {sql}")]
+    private partial void LogGenerateSql(string sql);
 }

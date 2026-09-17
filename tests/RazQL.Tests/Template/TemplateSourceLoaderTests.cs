@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using NSubstitute;
 using RazQL.Template;
 
 namespace RazQL.Tests.Template;
@@ -20,7 +22,7 @@ public class TemplateSourceLoaderTests
 
         try
         {
-            var loader = new FileSystemTemplateSourceLoader();
+            var loader = new FileSystemTemplateSourceLoader(Substitute.For<ILogger<FileSystemTemplateSourceLoader>>());
 
             Assert.Equal("select 1", await loader.LoadAsync(descriptor, CancellationToken.None));
         }
@@ -48,7 +50,7 @@ public class TemplateSourceLoaderTests
 
         try
         {
-            var loader = new FileSystemTemplateSourceLoader();
+            var loader = new FileSystemTemplateSourceLoader(Substitute.For<ILogger<FileSystemTemplateSourceLoader>>());
 
             Assert.Equal("select 2", await loader.LoadAsync(descriptor, CancellationToken.None));
         }
@@ -72,7 +74,7 @@ public class TemplateSourceLoaderTests
 
         try
         {
-            var loader = new FileSystemTemplateSourceLoader();
+            var loader = new FileSystemTemplateSourceLoader(Substitute.For<ILogger<FileSystemTemplateSourceLoader>>());
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 loader.LoadAsync(descriptor, CancellationToken.None));
@@ -89,7 +91,7 @@ public class TemplateSourceLoaderTests
     {
         var descriptor = QueryDescriptor.ForExpression<IEscapingFileSystemMapper, string, DescriptorResult>(
             mapper => mapper.FindAsync);
-        var loader = new FileSystemTemplateSourceLoader();
+        var loader = new FileSystemTemplateSourceLoader(Substitute.For<ILogger<FileSystemTemplateSourceLoader>>());
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             loader.LoadAsync(descriptor, CancellationToken.None));
@@ -101,7 +103,7 @@ public class TemplateSourceLoaderTests
     public async Task ResourceLoader_LoadsMatchingEmbeddedResource()
     {
         var descriptor = DescriptorFor(nameof(IAttributedMapper.LoadAsync));
-        var loader = new ResourceTemplateSourceLoader();
+        var loader = new ResourceTemplateSourceLoader(Substitute.For<ILogger<ResourceTemplateSourceLoader>>());
 
         var source = await loader.LoadAsync(descriptor, CancellationToken.None);
 
@@ -113,7 +115,7 @@ public class TemplateSourceLoaderTests
     {
         var descriptor = QueryDescriptor.ForExpression<IResourceConventionMapper, string, DescriptorResult>(
             mapper => mapper.FindAsync);
-        var loader = new ResourceTemplateSourceLoader();
+        var loader = new ResourceTemplateSourceLoader(Substitute.For<ILogger<ResourceTemplateSourceLoader>>());
 
         var source = await loader.LoadAsync(descriptor, CancellationToken.None);
 
@@ -125,7 +127,7 @@ public class TemplateSourceLoaderTests
     {
         var descriptor = QueryDescriptor.ForExpression<ICustomResourceMapper, string, DescriptorResult>(
             mapper => mapper.FindAsync);
-        var loader = new ResourceTemplateSourceLoader();
+        var loader = new ResourceTemplateSourceLoader(Substitute.For<ILogger<ResourceTemplateSourceLoader>>());
 
         var source = await loader.LoadAsync(descriptor, CancellationToken.None);
 
@@ -136,7 +138,7 @@ public class TemplateSourceLoaderTests
     public async Task ResourceLoader_ThrowsWhenResourceDoesNotExist()
     {
         var descriptor = DescriptorFor(nameof(IAttributedMapper.FindAsync));
-        var loader = new ResourceTemplateSourceLoader();
+        var loader = new ResourceTemplateSourceLoader(Substitute.For<ILogger<ResourceTemplateSourceLoader>>());
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             loader.LoadAsync(descriptor, CancellationToken.None));

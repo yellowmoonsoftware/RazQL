@@ -1,9 +1,10 @@
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 
 namespace RazQL.Template;
 
 /// <summary>Loads inline template source from <see cref="RazQLQueryAttribute"/>.</summary>
-public sealed class QueryAttributeTemplateSourceLoader : ITemplateSourceLoader
+public sealed partial class QueryAttributeTemplateSourceLoader(ILogger<QueryAttributeTemplateSourceLoader> logger) : ITemplateSourceLoader
 {
     /// <inheritdoc />
     public Task<string> LoadAsync(QueryDescriptor queryDescriptor, CancellationToken cancellationToken)
@@ -22,6 +23,10 @@ public sealed class QueryAttributeTemplateSourceLoader : ITemplateSourceLoader
                 $"No effective query was specified in the {nameof(RazQLQueryAttribute)} for {queryDescriptor.MapperType.FullName}.{queryDescriptor.QueryMethod.Name}");
         }
 
+        LogTemplateSource(queryDescriptor);
         return Task.FromResult(querySource);
     }
+
+    [LoggerMessage(LogLevel.Information, "Using RazQLQueryAttribute as template source for [{Descriptor}]")]
+    private partial void LogTemplateSource(QueryDescriptor descriptor);
 }

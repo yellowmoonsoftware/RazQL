@@ -13,7 +13,7 @@ public static class RazQLServiceExtensions
 {
     extension(IServiceCollection services)
     {
-        /// <summary>Adds RazQL services, source loaders, and optionally generated mappers.</summary>
+        /// <summary>Adds RazQL services, logging, source loaders, and optionally generated mappers.</summary>
         /// <param name="builderAction">Configures the required execution adapter and optional registrations.</param>
         /// <returns>The service collection.</returns>
         public IServiceCollection AddRazQL(Action<IRazQLBuilder>? builderAction = null)
@@ -26,6 +26,7 @@ public static class RazQLServiceExtensions
                     "An execution adapter must be configured with UsingExecutionAdapter<T>() before registering RazQL services.");
             }
 
+            services.AddLogging();
             services.TryAddSingleton<IRazorEngine>(_ => new RazorEngine());
 
             // Add RazQL services

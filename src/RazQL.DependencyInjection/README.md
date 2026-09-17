@@ -25,7 +25,7 @@ services.AddRazQL(builder => builder
 
 `AddRazQL` requires an execution adapter selected in its builder action. It registers the Razor engine, template cache, SQL generator, query executor, data-binder factories, immutable data-binder options, built-in template source loaders, and loader resolver as singletons. Generated mapper implementations are registered against their mapper interfaces and as `IMapperTemplatePreloader` instances.
 
-Applications using `ILogger<T>` registrations supplied by a .NET host can observe template compilation and generated-SQL diagnostics.
+`AddRazQL` calls `AddLogging()` so the default services also resolve from a bare `ServiceCollection`. It does not select an output provider. Configure logging through the host or with `AddLogging`; existing logger registrations remain in effect.
 
 ## Customization
 

@@ -332,6 +332,12 @@ public abstract record QueryDescriptor
             ? null
             : templateLocation.Trim();
     }
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return $"{MapperType.Name}.{QueryMethod.Name}({CriteriaType.Name})->{ResultType.Name}";
+    }
 }
 
 /// <summary>Describes a mapper query with compile-time mapper, criteria, and task result types.</summary>
@@ -343,5 +349,11 @@ public sealed record QueryDescriptor<TMapper, TCriteria, TResult> : QueryDescrip
     internal QueryDescriptor(MethodInfo queryMethod)
         : base(typeof(TMapper), queryMethod, typeof(TCriteria), typeof(TResult))
     {
+    }
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return base.ToString();
     }
 }

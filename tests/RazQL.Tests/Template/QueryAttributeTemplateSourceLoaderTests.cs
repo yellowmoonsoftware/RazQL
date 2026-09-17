@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using NSubstitute;
 using RazQL.Template;
 
 namespace RazQL.Tests.Template;
@@ -9,7 +11,7 @@ public class QueryAttributeTemplateSourceLoaderTests
     {
         var descriptor = QueryDescriptor.ForExpression<IInlineSourceMapper, long, DescriptorResult>(
             mapper => mapper.FindAsync);
-        var loader = new QueryAttributeTemplateSourceLoader();
+        var loader = new QueryAttributeTemplateSourceLoader(Substitute.For<ILogger<QueryAttributeTemplateSourceLoader>>());
 
         var source = await loader.LoadAsync(descriptor, CancellationToken.None);
 
@@ -22,7 +24,7 @@ public class QueryAttributeTemplateSourceLoaderTests
     {
         var descriptor = QueryDescriptor.ForExpression<IInlineSourceMapper, long, DescriptorResult>(
             mapper => mapper.FindWithoutInlineSourceAsync);
-        var loader = new QueryAttributeTemplateSourceLoader();
+        var loader = new QueryAttributeTemplateSourceLoader(Substitute.For<ILogger<QueryAttributeTemplateSourceLoader>>());
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             loader.LoadAsync(descriptor, CancellationToken.None));
@@ -35,7 +37,7 @@ public class QueryAttributeTemplateSourceLoaderTests
     {
         var descriptor = QueryDescriptor.ForExpression<IInlineSourceMapper, long, DescriptorResult>(
             mapper => mapper.FindWithBlankSourceAsync);
-        var loader = new QueryAttributeTemplateSourceLoader();
+        var loader = new QueryAttributeTemplateSourceLoader(Substitute.For<ILogger<QueryAttributeTemplateSourceLoader>>());
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             loader.LoadAsync(descriptor, CancellationToken.None));

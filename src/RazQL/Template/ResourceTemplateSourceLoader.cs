@@ -1,10 +1,12 @@
+using Microsoft.Extensions.Logging;
+
 namespace RazQL.Template;
 
 /// <summary>Loads query templates from manifest resources in the mapper interface's assembly.</summary>
 /// <remarks>
 /// Templates are resolved as <c>{MapperNamespace}.[TemplateLocation.]SqlTemplates.{Mapper}.{Query}.sql.cshtml</c>.
 /// </remarks>
-public sealed class ResourceTemplateSourceLoader : ITemplateSourceLoader
+public sealed partial class ResourceTemplateSourceLoader(ILogger<ResourceTemplateSourceLoader> logger) : ITemplateSourceLoader
 {
     private const string TemplateDirectoryName = "SqlTemplates";
 
@@ -52,7 +54,11 @@ public sealed class ResourceTemplateSourceLoader : ITemplateSourceLoader
             throw new InvalidOperationException($"Failed to get resource stream for template resource {resource}");
         }
 
+        LogTemplateLoadAttempt(queryDescriptor, resource);
         using var reader = new StreamReader(stream);
         return await reader.ReadToEndAsync(cancellationToken);
     }
+
+    [LoggerMessage(LogLevel.Information, "Attempting to load template for [{Descriptor}] from resource: [{ResourceName}]")]
+    private partial void LogTemplateLoadAttempt(QueryDescriptor descriptor, string resourceName);
 }
