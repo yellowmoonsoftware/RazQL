@@ -26,8 +26,9 @@ dotnet test RazQL.slnx
 ```
 
 The last command packs all distributable projects and runs a clean consumer using
-only the resulting NuGet packages. It is especially important for generator,
-package, and dependency-injection changes.
+only the resulting NuGet packages. It also renders an embedded Razor template and
+checks the generated SQL and bound parameter. It is especially important for
+generator, package, and dependency-injection changes.
 
 ## Code and Tests
 

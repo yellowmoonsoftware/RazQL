@@ -7,6 +7,7 @@ using RazQL.Dapper;
 using RazQL.DependencyInjection;
 using RazQL.Execution;
 using RazQL.PackageConsumption.Mapper;
+using RazQL.Template;
 
 if (args.Length != 2)
 {
@@ -42,6 +43,26 @@ var preloaderRegistration = services.Single(
 if (preloaderRegistration.ImplementationFactory is null)
 {
     throw new InvalidOperationException("Generated mapper preloader registration was not discovered.");
+}
+
+using var serviceProvider = services.BuildServiceProvider();
+var descriptor = QueryDescriptor.ForExpression<IPackageMapper, int, int>(mapper => mapper.FindAsync);
+const int criteria = 42;
+var generatedQuery = await serviceProvider.GetRequiredService<ISqlGenerator>()
+    .ApplyCriteriaAsync(descriptor, criteria);
+var parameters = generatedQuery.Parameters.GetParameters().ToArray();
+if (parameters.Length != 1 ||
+    string.IsNullOrWhiteSpace(parameters[0].Key) ||
+    !Equals(parameters[0].Value, criteria))
+{
+    throw new InvalidOperationException("The packaged template did not bind the expected criteria value.");
+}
+
+var expectedSql = $"select @{parameters[0].Key}";
+if (!string.Equals(generatedQuery.Sql.Trim(), expectedSql, StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        $"The packaged template rendered unexpected SQL. Expected '{expectedSql}', got '{generatedQuery.Sql.Trim()}'.");
 }
 
 AssertPackageEntries(
