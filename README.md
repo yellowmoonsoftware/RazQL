@@ -104,7 +104,7 @@ dotnet test RazQL.slnx
 
 ## Status
 
-RazQL is a proof of concept moving toward its first public release. The first package version is `0.1.0-alpha`; release automation still needs to be finalized.
+RazQL is a proof of concept moving toward its first public release. Release Please prepares a single version and changelog for all five packages, starting at `0.1.0-alpha`. CI builds and tests on .NET 10 and verifies a clean package-only consumer. GitHub releases do not yet publish NuGet packages.
 
 ## Community
 

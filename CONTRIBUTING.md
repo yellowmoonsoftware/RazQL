@@ -46,3 +46,13 @@ Mark breaking changes with `!` and explain their migration impact. Keep pull
 requests focused, link related issues, describe user-visible behavior and
 compatibility effects, and list the validation performed. Contributions are
 accepted under the repository's [MIT License](LICENSE).
+
+## Releases
+
+The Release Please workflow uses Conventional Commits on `main` to open a
+release pull request. It updates `CHANGELOG.md`, the release manifest, and the
+shared version in `src/Directory.Build.props`; all five packages use that version.
+The release pull request receives the same CI checks as other changes. Merging it
+creates a prerelease tag and GitHub release. There is no NuGet publishing step yet;
+package publication, symbol packages, and broader integration tests remain
+separate follow-up work.
