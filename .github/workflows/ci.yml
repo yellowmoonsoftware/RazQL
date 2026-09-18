@@ -50,3 +50,27 @@ jobs:
 
       - name: Verify packages
         run: ./eng/test-packages.sh
+
+  report-release-pr-status:
+    if: always() && github.event_name == 'workflow_dispatch'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - name: Report aggregate result on release PR commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RESULT: ${{ needs.build-and-test.result }}
+        run: |
+          if [[ "$CI_RESULT" == 'success' ]]; then
+            state='success'
+          else
+            state='failure'
+          fi
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state="$state" \
+            -f context='RazQL CI' \
+            -f description="Build, tests, and package verification: $CI_RESULT" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          test "$CI_RESULT" == 'success'
