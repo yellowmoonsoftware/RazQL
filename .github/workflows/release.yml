@@ -157,4 +157,4 @@ jobs:
         run: |
           shopt -s nullglob
           packages=(artifacts/packages/*.nupkg artifacts/packages/*.snupkg)
-          gh release upload "$GITHUB_REF_NAME" "${packages[@]}" --clobber
+          gh release upload "$GITHUB_REF_NAME" "${packages[@]}" --repo "$GITHUB_REPOSITORY" --clobber
