@@ -7,6 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Title>RazQL.Core</Title>
     <Description>Provider-neutral Razor SQL template runtime, binding, loading, and execution contracts for RazQL.</Description>
     <PackageTags>RazQL;Razor;SQL;templating;mapping</PackageTags>

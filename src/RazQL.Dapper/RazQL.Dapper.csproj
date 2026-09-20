@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Title>RazQL.Dapper</Title>
     <Description>Dapper execution adapter for RazQL parameterized SQL queries.</Description>
     <PackageTags>RazQL;Dapper;SQL;data-access</PackageTags>

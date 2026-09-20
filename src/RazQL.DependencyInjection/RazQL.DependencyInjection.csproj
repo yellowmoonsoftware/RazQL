@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Title>RazQL.DependencyInjection</Title>
     <Description>Microsoft dependency injection registration for RazQL runtime services and generated mappers.</Description>
     <PackageTags>RazQL;dependency-injection;DI;mapper</PackageTags>

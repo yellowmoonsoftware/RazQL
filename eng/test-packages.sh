@@ -47,6 +47,20 @@ for project in "${projects[@]}"; do
         -p:PackageVersion="$package_version"
 done
 
+symbol_package_ids=(
+    "RazQL.Core"
+    "RazQL.Dapper"
+    "RazQL.DependencyInjection"
+)
+
+for package_id in "${symbol_package_ids[@]}"; do
+    symbol_package="$package_directory/$package_id.$package_version.snupkg"
+    if [[ ! -f "$symbol_package" ]]; then
+        echo "Expected symbol package was not created: $symbol_package" >&2
+        exit 1
+    fi
+done
+
 cp -R "$repository_root/tests/PackageConsumption/Consumer/." "$consumer_directory/"
 
 NUGET_PACKAGES="$nuget_packages" dotnet restore \
