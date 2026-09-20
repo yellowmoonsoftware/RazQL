@@ -11,6 +11,7 @@ This repository contains the RazQL .NET libraries and their tests.
 - `src/RazQL.Generators/` contains mapper discovery, analysis, validation, and source emission.
 - `src/RazQL.DependencyInjection/` integrates the runtime and generated mappers with Microsoft dependency injection.
 - `tests/` mirrors the runtime, adapter, DI, and generator projects. SQL fixtures live below the relevant test project.
+- `tests/RazQL.IntegrationTests/` builds a Docker-backed GMDB fixture and stores its pinned seed SQL under `Fixtures/`.
 - `Directory.Packages.props` centrally manages NuGet versions; project references must remain versionless.
 
 ## Build, Test, and Development Commands
@@ -20,6 +21,7 @@ Use the .NET 10 SDK from the repository root:
 - `dotnet restore RazQL.slnx` restores dependencies.
 - `dotnet build RazQL.slnx` compiles every project and runs generator diagnostics.
 - `dotnet test RazQL.slnx` runs the complete xUnit suite.
+- `dotnet test tests/RazQL.IntegrationTests/RazQL.IntegrationTests.csproj` runs the database fixture check; Docker and GHCR image access are required.
 - `dotnet test tests/RazQL.Tests/RazQL.Tests.csproj --collect:"XPlat Code Coverage"` collects runtime-library coverage.
 - `dotnet pack RazQL.slnx -c Release` creates all distributable packages for inspection.
 - `./eng/test-packages.sh` packs every distributable project and verifies a clean package-only consumer.
@@ -31,6 +33,7 @@ Use four-space indentation, braces on separate lines, file-scoped namespaces, an
 ## Testing Guidelines
 
 Use xUnit and NSubstitute. Group tests by subsystem and name cases `Method_ExpectedBehavior`, such as `Bind_AddsNamedParameterAndReusesIt`. Mock nontrivial dependencies through interfaces. Keep unit tests deterministic and independent of databases, files outside test fixtures, and network services.
+Keep Docker-backed behavior in `RazQL.IntegrationTests`; its shared fixture starts one migrated GMDB container and applies the pinned seed before tests run.
 
 ## Commit & Pull Request Guidelines
 

@@ -1,0 +1,5 @@
+@using RazQL.Binding
+@inherits RazQL.RazQLModel<string>
+select id, name
+from gmdb.artist
+where name = @Model.Bind()

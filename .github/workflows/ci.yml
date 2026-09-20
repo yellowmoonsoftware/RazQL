@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -44,6 +45,13 @@ jobs:
 
       - name: Build
         run: dotnet build RazQL.slnx --configuration Release --no-restore -warnaserror:CS8619
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test
         run: dotnet test RazQL.slnx --configuration Release --no-build

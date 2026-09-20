@@ -1,0 +1,11 @@
+@using RazQL.Binding
+@inherits RazQL.RazQLModel<RazQL.IntegrationTests.Models.ArtistSearchCriteria>
+select id, name
+from gmdb.artist
+where
+    1 = 0
+@foreach (var (name, _) in Select(m => m.Names))
+{
+    @: or name = @name.Bind()
+}
+order by id

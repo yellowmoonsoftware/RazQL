@@ -1,0 +1,6 @@
+@using RazQL.Binding
+@inherits RazQL.RazQLModel<System.Collections.Generic.ICollection<string>?>
+select id, name
+from gmdb.artist
+where name = any(@Model.BindAsArray(NullCollectionBinding.AsEmptyArray))
+order by id

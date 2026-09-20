@@ -1,0 +1,24 @@
+@using RazQL.Binding
+@using RazQL.IntegrationTests.Models
+@inherits RazQL.RazQLModel<ArtistDynamicCriteria>
+select id, name
+from gmdb.artist
+where 1 = 1
+@if (!IsNullOrEmpty(m => m.Ids))
+{
+    @: and id = any(@BindAsArray(m => m.Ids))
+}
+@if (!IsNullOrEmpty(m => m.NameContains))
+{
+    @: and name ilike @Bind(m => m.NameContains, Like!)
+}
+@if (IsTrue(m => m.RequireNameStartingWithA))
+{
+    @: and name like 'A%'
+}
+@OrderBy(m => m.OrderBy, column => column switch
+{
+    ArtistOrder.Id => "id",
+    ArtistOrder.Name => "name",
+    _ => null
+})

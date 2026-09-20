@@ -10,6 +10,7 @@
     <Project Path="tests/RazQL.DependencyInjection.Tests/RazQL.DependencyInjection.Tests.csproj" />
     <Project Path="tests/RazQL.Dapper.Tests/RazQL.Dapper.Tests.csproj" />
     <Project Path="tests/RazQL.Generators.Tests/RazQL.Generators.Tests.csproj" />
+    <Project Path="tests/RazQL.IntegrationTests/RazQL.IntegrationTests.csproj" />
     <Project Path="tests/RazQL.Tests/RazQL.Tests.csproj" />
   </Folder>
 </Solution>
