@@ -1,0 +1,160 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-and-pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Verify release version
+        id: version
+        shell: bash
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          project_version="$(dotnet msbuild src/RazQL/RazQL.csproj -nologo -getProperty:Version)"
+
+          echo "Tag version: $tag_version"
+          echo "Project version: $project_version"
+
+          if [[ "$tag_version" != "$project_version" ]]; then
+            echo "Tag version does not match the project version."
+            exit 1
+          fi
+
+          echo "value=$tag_version" >> "$GITHUB_OUTPUT"
+
+      - name: Restore
+        run: dotnet restore RazQL.slnx
+
+      - name: Build
+        run: dotnet build RazQL.slnx --configuration Release --no-restore -warnaserror:CS8619 -p:ContinuousIntegrationBuild=true
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test
+        run: dotnet test RazQL.slnx --configuration Release --no-build
+
+      - name: Verify package consumption
+        env:
+          PACKAGE_VERSION: ${{ steps.version.outputs.value }}
+        run: ./eng/test-packages.sh
+
+      - name: Pack release artifacts
+        env:
+          PACKAGE_VERSION: ${{ steps.version.outputs.value }}
+        shell: bash
+        run: |
+          mkdir -p artifacts/packages
+
+          projects=(
+            src/RazQL/RazQL.csproj
+            src/RazQL.Generators/RazQL.Generators.csproj
+            src/RazQL.Dapper/RazQL.Dapper.csproj
+            src/RazQL.DependencyInjection/RazQL.DependencyInjection.csproj
+            src/RazQL.Package/RazQL.Package.csproj
+          )
+
+          for project in "${projects[@]}"; do
+            dotnet pack "$project" \
+              --configuration Release \
+              --no-build \
+              --no-restore \
+              --output artifacts/packages \
+              -p:PackageVersion="$PACKAGE_VERSION" \
+              -p:ContinuousIntegrationBuild=true
+          done
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages-${{ steps.version.outputs.value }}
+          path: |
+            artifacts/packages/*.nupkg
+            artifacts/packages/*.snupkg
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: validate-and-pack
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: nuget-packages-${{ needs.validate-and-pack.outputs.version }}
+          path: artifacts/packages
+
+      - name: Obtain temporary NuGet API key
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Publish packages to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+          PACKAGE_VERSION: ${{ needs.validate-and-pack.outputs.version }}
+        shell: bash
+        run: |
+          package_ids=(
+            RazQL.Core
+            RazQL.Generators
+            RazQL.Dapper
+            RazQL.DependencyInjection
+            RazQL
+          )
+
+          for package_id in "${package_ids[@]}"; do
+            dotnet nuget push "artifacts/packages/${package_id}.${PACKAGE_VERSION}.nupkg" \
+              --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: Attach packages to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          packages=(artifacts/packages/*.nupkg artifacts/packages/*.snupkg)
+          gh release upload "$GITHUB_REF_NAME" "${packages[@]}" --clobber
