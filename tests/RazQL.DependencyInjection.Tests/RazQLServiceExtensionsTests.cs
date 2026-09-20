@@ -1,8 +1,10 @@
 using System.Data.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using RazQL;
 using RazQL.Binding;
 using RazQL.Execution;
@@ -235,6 +237,51 @@ public class RazQLServiceExtensionsTests
         Assert.Same(first, preloader);
         Assert.True(first.GetType().IsSealed);
         Assert.True(first.GetType().IsNotPublic);
+    }
+
+    [Fact]
+    public void PreloadTemplatesOnStartup_RegistersHostedServiceOnlyWhenEnabled()
+    {
+        var defaultServices = new ServiceCollection();
+        defaultServices.AddRazQL(builder => builder.UsingExecutionAdapter<ReplacementExecutionAdapter>());
+        using var defaultProvider = defaultServices.BuildServiceProvider();
+        Assert.Empty(defaultProvider.GetServices<IHostedService>());
+
+        var preloadingServices = new ServiceCollection();
+        preloadingServices.AddRazQL(builder => builder
+            .UsingExecutionAdapter<ReplacementExecutionAdapter>()
+            .PreloadTemplatesOnStartup()
+            .PreloadTemplatesOnStartup());
+        using var preloadingProvider = preloadingServices.BuildServiceProvider();
+
+        Assert.IsType<TemplatePreloaderHostedService>(
+            Assert.Single(preloadingProvider.GetServices<IHostedService>()));
+    }
+
+    [Fact]
+    public async Task TemplatePreloaderHostedService_StartAsyncAwaitsEveryPreloadTask()
+    {
+        var templateCache = Substitute.For<ITemplateCache>();
+        var preloader = Substitute.For<IMapperTemplatePreloader>();
+        var first = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var second = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        preloader.PreloadTemplates(templateCache, Arg.Any<CancellationToken>())
+            .Returns([first.Task, second.Task]);
+        var hostedService = new TemplatePreloaderHostedService(
+            templateCache,
+            [preloader],
+            NullLogger<TemplatePreloaderHostedService>.Instance);
+
+        var startup = hostedService.StartAsync(CancellationToken.None);
+        Assert.False(startup.IsCompleted);
+
+        first.SetResult();
+        Assert.False(startup.IsCompleted);
+
+        second.SetResult();
+        await startup;
+
+        preloader.Received(1).PreloadTemplates(templateCache, CancellationToken.None);
     }
 }
 

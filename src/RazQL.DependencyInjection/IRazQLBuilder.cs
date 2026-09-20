@@ -43,6 +43,12 @@ public interface IRazQLBuilder
     /// <returns>This builder.</returns>
     IRazQLBuilder AddMappersFromAssembly(Assembly assembly);
 
+    /// <summary>
+    /// Adds a hosted service that loads and compiles every registered generated mapper template during host startup.
+    /// </summary>
+    /// <returns>This builder.</returns>
+    IRazQLBuilder PreloadTemplatesOnStartup();
+
     /// <summary>Configures immutable data-binder options before services are registered.</summary>
     /// <param name="builderAction">An action that customizes SQL clause mappings.</param>
     /// <returns>This builder.</returns>

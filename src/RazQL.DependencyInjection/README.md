@@ -57,4 +57,13 @@ All RazQL services and loaders are registered as singletons. Implementations mus
 
 ## Preloading
 
-Generated mappers implement `IMapperTemplatePreloader`. A startup coordinator can resolve all preloaders, call `PreloadTemplates`, and await the resulting tasks to compile templates and surface failures before serving requests.
+Generated mappers implement `IMapperTemplatePreloader`. Call `PreloadTemplatesOnStartup()` on the builder to register an `IHostedService` that loads and compiles all registered mapper templates before host startup completes. Compilation failures are logged and fail startup.
+
+```csharp
+services.AddRazQL(builder => builder
+    .UsingExecutionAdapter<DapperExecutionAdapter>()
+    .AddMappersFromAssembly(typeof(IArtistMapper).Assembly)
+    .PreloadTemplatesOnStartup());
+```
+
+Template preloading is opt-in and requires the application to run through the .NET Generic Host. Consumers using only a service provider can resolve `IMapperTemplatePreloader` instances and coordinate their tasks directly.

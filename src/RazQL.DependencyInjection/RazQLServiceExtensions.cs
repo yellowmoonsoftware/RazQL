@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using RazorEngineCore;
 using RazQL.Binding;
 using RazQL.Execution;
@@ -38,6 +39,13 @@ public static class RazQLServiceExtensions
                     typeof(IMapperTemplatePreloader),
                     provider => (IMapperTemplatePreloader)provider.GetRequiredService(mapperType));
             }
+
+            if (razQLBuilder.ShouldPreloadTemplatesOnStartup)
+            {
+                services.TryAddEnumerable(
+                    ServiceDescriptor.Singleton<IHostedService, TemplatePreloaderHostedService>());
+            }
+
             // Add defined ITemplateSourceLoaders
             foreach (var templateSourceLoader in razQLBuilder.TemplateSourceLoaders)
             {
@@ -73,6 +81,8 @@ public static class RazQLServiceExtensions
         };
 
         internal IDictionary<Type, Type> MapperImplementations { get; } = new Dictionary<Type, Type>();
+
+        internal bool ShouldPreloadTemplatesOnStartup { get; private set; }
 
         internal Action<IDataBinderOptionsBuilder>? DataBinderOptionsBuilderAction { get; private set; }
 
@@ -123,6 +133,12 @@ public static class RazQLServiceExtensions
                 MapperImplementations[mapping.MapperType] = mapping.ImplementationType;
             }
 
+            return this;
+        }
+
+        public IRazQLBuilder PreloadTemplatesOnStartup()
+        {
+            ShouldPreloadTemplatesOnStartup = true;
             return this;
         }
 
