@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.1](https://github.com/yellowmoonsoftware/RazQL/compare/v0.1.0-alpha...v0.1.0-alpha.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* specify repository for release assets ([4afc004](https://github.com/yellowmoonsoftware/RazQL/commit/4afc0042680f1faa16d3b2a7f8277bf78f709e73))
+
 ## 0.1.0-alpha (2026-09-20)
 
 
