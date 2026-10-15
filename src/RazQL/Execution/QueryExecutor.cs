@@ -19,8 +19,7 @@ public sealed partial class QueryExecutor(
     public async Task<IEnumerable<TResult>> ExecuteAsync<TMapper, TCriteria, TResult>(QueryDescriptor<TMapper, TCriteria, IEnumerable<TResult>> descriptor, TCriteria criteria,
         CancellationToken cancellationToken = default)
     {
-        var generatedQuery = await sqlGenerator.ApplyCriteriaAsync(descriptor, criteria, cancellationToken);
-
+        var generatedQuery = await sqlGenerator.ApplyCriteriaAsync<TCriteria, TResult>(descriptor, criteria, cancellationToken);
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         LogExecution(descriptor);
         return await executorAdapter.QueryAsync<TResult>(connection, generatedQuery, cancellationToken);
@@ -30,10 +29,10 @@ public sealed partial class QueryExecutor(
     public async Task<TResult?> ExecuteAsync<TMapper, TCriteria, TResult>(QueryDescriptor<TMapper, TCriteria, TResult> descriptor, TCriteria criteria,
         CancellationToken cancellationToken = default)
     {
-        var generatedQuery = await sqlGenerator.ApplyCriteriaAsync(descriptor, criteria, cancellationToken);
+        var generatedQueryResult = await sqlGenerator.ApplyCriteriaAsync<TCriteria, TResult>(descriptor, criteria, cancellationToken);
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         LogExecution(descriptor);
-        return await executorAdapter.QuerySingleOrDefaultAsync<TResult>(connection, generatedQuery, cancellationToken);
+        return await executorAdapter.QuerySingleOrDefaultAsync<TResult>(connection, generatedQueryResult, cancellationToken);
     }
 
     [LoggerMessage(LogLevel.Information, "Executing query: {descriptor}")]

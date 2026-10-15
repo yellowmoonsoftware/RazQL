@@ -4,6 +4,10 @@ using RazQL.Binding;
 
 namespace RazQL;
 
+public record RazQLModelContext<TCriteria, TResult>(
+    IDataBinder<TCriteria> Binder,
+    IResultMapBuilder<TResult> ResultMapBuilder); 
+
 /// <summary>Base class required for every Razor template compiled by RazQL.</summary>
 public abstract class RazQLModel : RazorEngineTemplateBase
 {
@@ -13,10 +17,12 @@ public abstract class RazQLModel : RazorEngineTemplateBase
 
 /// <summary>Provides a typed data binder as the model available to a RazQL template.</summary>
 /// <typeparam name="TModel">The mapper method's criteria type.</typeparam>
-public class RazQLModel<TModel> : RazQLModel, IDataBinder<TModel>
+public class RazQLModel<TModel, TResult> : RazQLModel, IDataBinder<TModel>
 {
     /// <summary>Gets or sets the data binder exposed as <c>Model</c> within the Razor template.</summary>
     public new required IDataBinder<TModel> Model { get; set; }
+
+    public required IResultMapBuilder<TResult> ResultMapBuilder { private get; set; }
 
     /// <inheritdoc />
     public string BindAsArray<TValue>(Expression<Func<TModel, ICollection<TValue>?>> selector,
@@ -56,4 +62,9 @@ public class RazQLModel<TModel> : RazQLModel, IDataBinder<TModel>
     public string OrderBy<TEnum>(Func<TModel, ICollection<OrderSpec<TEnum>>?> selector,
         Func<TEnum, string?> columnTargetProvider) where TEnum : struct, Enum =>
         Model.OrderBy(selector, columnTargetProvider);
+
+    public void ResultMap(Action<IResultMapBuilder<TResult>> builderAction)
+    {
+        builderAction(ResultMapBuilder);
+    }
 }

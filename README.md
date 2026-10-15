@@ -1,6 +1,6 @@
 # RazQL
 
-RazQL (pronounced “rascal”) is an experimental .NET library for building and executing parameterized SQL from Razor templates. It takes inspiration from MyBatis mapper interfaces while using source generation, RazorEngineCore, and Dapper.
+RazQL (pronounced “rascal”) is an experimental .NET library for building and executing parameterized SQL from Razor templates. It takes inspiration from MyBatis mapper interfaces while using source generation, [RazorEngineCore](https://github.com/adoconnection/RazorEngineCore), and [Dapper](https://github.com/DapperLib/Dapper).
 
 The project is being prepared for an initial open source release. No stable NuGet package has been published yet, and the public API may change before version 1.0.
 

@@ -13,14 +13,14 @@ public sealed partial class DefaultTemplateCache(IRazorEngine razorEngine, ITemp
     private readonly ConcurrentDictionary<QueryDescriptor, Task<object>> _templates = new();
 
     /// <inheritdoc />
-    public async Task<IRazorEngineCompiledTemplate<RazQLModel<TCriteria>>> GetTemplateAsync<TMapper, TCriteria, TResult>(QueryDescriptor<TMapper, TCriteria, TResult> descriptor, CancellationToken cancellationToken)
+    public async Task<IRazorEngineCompiledTemplate<RazQLModel<TCriteria, TResult>>> GetTemplateAsync<TCriteria, TResult>(QueryDescriptor descriptor, CancellationToken cancellationToken)
     {
         var cachedTemplate = _templates.GetOrAdd(descriptor, static async (qryDesc, args) =>
         {
             var (engine, res, token, logCompilation) = args;
             var sourceLoader = res.Resolve(qryDesc);
             var templateSource = await sourceLoader.LoadAsync(qryDesc, token);
-            var compiledTemplate = await engine.CompileAsync<RazQLModel<TCriteria>>(templateSource, b =>
+            var compiledTemplate = await engine.CompileAsync<RazQLModel<TCriteria, TResult>>(templateSource, b =>
             {
                 b.AddUsing("RazQL.Binding");
             }, token);
@@ -33,7 +33,7 @@ public sealed partial class DefaultTemplateCache(IRazorEngine razorEngine, ITemp
         // and remove that exact failed descriptor/task from the cache
         try
         {
-            return (IRazorEngineCompiledTemplate<RazQLModel<TCriteria>>)await cachedTemplate;
+            return (IRazorEngineCompiledTemplate<RazQLModel<TCriteria, TResult>>)await cachedTemplate;
         }
         catch (Exception e)
         {

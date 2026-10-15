@@ -139,7 +139,11 @@ internal static class GeneratedMapperEmitter
 
         for (var index = 0; index < methods.Count; index++)
         {
-            source.AppendLine("            templateCache.GetTemplateAsync(")
+            source.Append("            templateCache.GetTemplateAsync<")
+                .Append(DisplayType(methods[index].CriteriaType!))
+                .Append(", ")
+                .Append(DisplayType(methods[index].ResultType!))
+                .AppendLine(">(")
                 .Append("                QueryDescriptor_")
                 .Append(index.ToString("D3", CultureInfo.InvariantCulture))
                 .AppendLine(",")

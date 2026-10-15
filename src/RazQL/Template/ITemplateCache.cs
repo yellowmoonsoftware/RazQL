@@ -12,5 +12,5 @@ public interface ITemplateCache
     /// <param name="descriptor">The mapper query descriptor.</param>
     /// <param name="cancellationToken">A token that cancels loading or compilation.</param>
     /// <returns>A task containing the compiled Razor template.</returns>
-    Task<IRazorEngineCompiledTemplate<RazQLModel<TCriteria>>> GetTemplateAsync<TMapper, TCriteria, TResult>(QueryDescriptor<TMapper, TCriteria, TResult> descriptor, CancellationToken cancellationToken);
+    Task<IRazorEngineCompiledTemplate<RazQLModel<TCriteria, TResult>>> GetTemplateAsync<TCriteria, TResult>(QueryDescriptor descriptor, CancellationToken cancellationToken);
 }
