@@ -18,7 +18,8 @@ The application must also register a provider-specific `DbDataSource`.
 
 The adapter interprets the relationship tree declared in `ResultMap(...)` and maps contiguous
 column groups through Dapper. `Association` sets a single child property; `Collection` adds
-canonical child objects to an existing collection. Nested relationships are traversed depth-first.
+canonical child objects to a collection, optionally creating it through a configured factory.
+Nested relationships are traversed depth-first.
 The [main README](../../README.md#association-mapping) includes matching DTOs and SQL.
 
 ### Object Identity
@@ -62,8 +63,25 @@ put a nullable joined key first so Dapper can recognize an absent object.
 
 Missing children become null associations and are omitted from collections by default. The
 `addNullChildren: true` overload permits one null entry for an owner when a missing child is
-encountered repeatedly. Collection properties must be initialized by the DTO. A read-only property
-returning a mutable `ICollection<T>` is sufficient; association properties require a setter.
+encountered repeatedly. Collection properties can be initialized by the DTO or an optional
+`collectionFactory` on either `Collection` overload:
+
+```csharp
+.Collection<Song>("id", value => value.Songs,
+    song => song.Identity(value => value.Id),
+    collectionFactory: () => new List<Song>())
+```
+
+The factory is invoked only when the canonical owner's collection is null. Its result is assigned
+to the property and reused for subsequent children. The factory must return a non-null collection
+assignable to the declared property type, and that property must have a setter when initialization
+is required. Each owner and property can receive its own collection by returning a new instance.
+Existing collections are preserved without invoking the factory; a getter-only property returning
+a mutable `ICollection<T>` remains supported.
+
+Initialization also occurs for missing children: the collection stays empty unless
+`addNullChildren: true` permits a null entry. A null collection without a factory throws an
+`InvalidOperationException` naming the owner type and property. Association properties require a setter.
 
 ### Execution and Compatibility
 
@@ -88,6 +106,5 @@ the same per-property tracking rules.
 
 ### Current Limitations
 
-Collection factories and configurable one-to-one conflict policies are not implemented. Initialize
-collections yourself, and make joined rows agree on a single-object association's identity. These
-constraints are separate from query-wide object identity.
+Configurable one-to-one conflict policies are not implemented. Make joined rows agree on a
+single-object association's identity. This constraint is separate from query-wide object identity.

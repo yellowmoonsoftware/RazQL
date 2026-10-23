@@ -15,7 +15,7 @@ internal static class ExpressionAndTypeExtensions
         return propertyInfo;
     }
     
-    public static (PropertyInfo, MethodInfo) GetPropertyAddMethod<TInstance, TProperty>(this Expression<Func<TInstance, ICollection<TProperty>>> propertySelector)
+    public static (PropertyInfo, MethodInfo) GetPropertyAddMethod<TInstance, TProperty>(this Expression<Func<TInstance, ICollection<TProperty>?>> propertySelector)
     {
         var propertyInfo = GetPropertyInfo(propertySelector);
 

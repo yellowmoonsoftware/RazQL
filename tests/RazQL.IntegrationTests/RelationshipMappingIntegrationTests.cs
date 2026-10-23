@@ -19,6 +19,7 @@ public sealed class RelationshipMappingIntegrationTests(GmdbDatabaseFixture fixt
         Assert.NotNull(result.PrimaryArtist);
         Assert.Equal(result.Id, result.PrimaryArtist.Id);
         Assert.Same(result.PrimaryArtist, result.SecondaryArtist);
+        Assert.NotNull(result.Credits);
         Assert.Equal([1L, 2L], result.Credits.Select(credit => credit.Id));
         Assert.All(result.Credits, credit => Assert.Same(result.PrimaryArtist, credit.Artist));
     }
@@ -32,6 +33,7 @@ public sealed class RelationshipMappingIntegrationTests(GmdbDatabaseFixture fixt
 
         Assert.NotNull(result);
         Assert.Equal("Queen", result.Name);
+        Assert.NotNull(result.Credits);
         Assert.Empty(result.Credits);
         Assert.NotNull(result.PrimaryArtist);
         Assert.Equal(result.Id, result.PrimaryArtist.Id);
@@ -60,6 +62,9 @@ public sealed class RelationshipMappingIntegrationTests(GmdbDatabaseFixture fixt
         Assert.NotNull(second);
         Assert.NotSame(first, second);
         Assert.NotSame(first.PrimaryArtist, second.PrimaryArtist);
+        Assert.NotNull(first.Credits);
+        Assert.NotNull(second.Credits);
+        Assert.NotSame(first.Credits, second.Credits);
         Assert.NotSame(first.Credits.First(), second.Credits.First());
     }
 }

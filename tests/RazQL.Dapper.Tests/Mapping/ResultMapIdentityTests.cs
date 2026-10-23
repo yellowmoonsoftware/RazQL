@@ -8,6 +8,44 @@ namespace RazQL.Dapper.Tests.Mapping;
 public class ResultMapIdentityTests
 {
     [Fact]
+    public void ApplyResultRow_CreatesCollectionsPerOwnerAndPropertyWhileSharingChildren()
+    {
+        var calls = 0;
+        ICollection<Artist?> CreateCollection()
+        {
+            calls++;
+            return new List<Artist?>();
+        }
+
+        var map = ResultMap<OptionalArtists>.Create(album => album
+            .Identity(value => value.Id)
+            .Collection<Artist?>("ArtistId", value => value.Artists, artist => artist.Identity(value => value!.Id),
+                collectionFactory: CreateCollection)
+            .Collection<Artist?>("GuestArtistId", value => value.GuestArtists, collectionFactory: CreateCollection));
+        var mapper = map.ToCorrelatedSequentialResultMap().CreateResultMapper<OptionalArtists>();
+        var artist = new Artist { Id = 10 };
+
+        var (first, _) = mapper.ApplyResultRow(
+            [new OptionalArtists { Id = 1, Artists = null, GuestArtists = null }, artist, new Artist { Id = 10 }]);
+        mapper.ApplyResultRow(
+            [new OptionalArtists { Id = 1, Artists = null, GuestArtists = null }, new Artist { Id = 10 }, new Artist { Id = 10 }]);
+        var (second, _) = mapper.ApplyResultRow(
+            [new OptionalArtists { Id = 2, Artists = null, GuestArtists = null }, new Artist { Id = 10 }, new Artist { Id = 10 }]);
+
+        Assert.NotNull(first.Artists);
+        Assert.NotNull(first.GuestArtists);
+        Assert.NotNull(second.Artists);
+        Assert.NotNull(second.GuestArtists);
+        Assert.Same(artist, Assert.Single(first.Artists));
+        Assert.Same(artist, Assert.Single(first.GuestArtists));
+        Assert.Same(artist, Assert.Single(second.Artists));
+        Assert.Same(artist, Assert.Single(second.GuestArtists));
+        Assert.NotSame(first.Artists, first.GuestArtists);
+        Assert.NotSame(first.Artists, second.Artists);
+        Assert.Equal(4, calls);
+    }
+
+    [Fact]
     public void ApplyResultRow_AssignsTheSameChildToTwoAssociationsOnOneOwner()
     {
         var map = ResultMap<Album>.Create(album => album
@@ -116,11 +154,15 @@ public class ResultMapIdentityTests
 
         if (addNullChildren)
         {
+            Assert.NotNull(album.Artists);
+            Assert.NotNull(album.GuestArtists);
             Assert.Null(Assert.Single(album.Artists));
             Assert.Null(Assert.Single(album.GuestArtists));
         }
         else
         {
+            Assert.NotNull(album.Artists);
+            Assert.NotNull(album.GuestArtists);
             Assert.Empty(album.Artists);
             Assert.Empty(album.GuestArtists);
         }
@@ -330,8 +372,8 @@ public class ResultMapIdentityTests
     public sealed class OptionalArtists
     {
         public int Id { get; init; }
-        public ICollection<Artist?> Artists { get; } = new List<Artist?>();
-        public ICollection<Artist?> GuestArtists { get; } = new List<Artist?>();
+        public ICollection<Artist?>? Artists { get; set; } = new List<Artist?>();
+        public ICollection<Artist?>? GuestArtists { get; set; } = new List<Artist?>();
     }
 
     public sealed record AlbumRecord(int Id)

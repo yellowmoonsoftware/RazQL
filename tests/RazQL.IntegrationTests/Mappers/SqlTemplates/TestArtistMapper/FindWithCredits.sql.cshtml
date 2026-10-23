@@ -7,7 +7,8 @@
         .Collection<ArtistCredit>("id", value => value.Credits, credit => credit
             .Identity(value => value.Id)
             .Association<Artist>("id", value => value.Artist, artist => artist
-                .Identity(value => value.Id)))
+                .Identity(value => value.Id)),
+            collectionFactory: () => new List<ArtistCredit>())
         .Association<Artist?>("id", value => value.PrimaryArtist)
         .Association<Artist?>("id", value => value.SecondaryArtist));
 }
