@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.0](https://github.com/yellowmoonsoftware/RazQL/compare/v0.2.0-alpha...v0.1.0) (2026-10-23)
+
+
+### Features
+
+* support optional collection factories in result maps ([6cdb8a9](https://github.com/yellowmoonsoftware/RazQL/commit/6cdb8a9e49ac97e328b99f2551dbfa34ab472bf7))
+
+
+### Bug Fixes
+
+* apply last-wins semantics to associations ([5289562](https://github.com/yellowmoonsoftware/RazQL/commit/52895620fdb26b63a04fed4ed62b3c2c92d278e1))
+* diagnose Dapper multi-mapping incompatibility ([8f3ac16](https://github.com/yellowmoonsoftware/RazQL/commit/8f3ac16e62d862ae949969ab9db68ab0d6e3d158))
+* track relationship context per owner property ([7efcc17](https://github.com/yellowmoonsoftware/RazQL/commit/7efcc17fab33cce903c03ee4896afca3b9968681))
+
+
+### Miscellaneous Chores
+
+* prepare first non-alpha release ([5ebab93](https://github.com/yellowmoonsoftware/RazQL/commit/5ebab932477f2add48429e8a6110d49b30bde692))
+
 ## [0.2.0-alpha](https://github.com/yellowmoonsoftware/RazQL/compare/v0.1.0-alpha...v0.2.0-alpha) (2026-10-23)
 
 
