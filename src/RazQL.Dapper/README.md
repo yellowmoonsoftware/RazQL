@@ -91,10 +91,46 @@ value. The adapter filters the buffered entries without maintaining a second res
 `QuerySingleOrDefaultAsync` checks root cardinality after graph assembly, allowing multiple joined
 rows for one root and throwing if more than one root is returned.
 
-The adapter calls Dapper's private arbitrary-type `MultiMapAsync` through a cached delegate.
-Dapper 2.1.86 exposes a public `Type[]` overload accepting SQL but not a `CommandDefinition`;
-the bridge preserves cancellation and the other command options. Dapper upgrades must preserve
-that private signature and should be validated with the adapter and integration tests.
+### Dapper Compatibility for Relations and Multi-Mapping
+
+**Dapper 2.1.89 is the validated baseline for this RazQL.Dapper version.** Relation mapping calls
+Dapper's non-public arbitrary-type `MultiMapAsync` through a cached delegate. The public `Type[]`
+overload in that version accepts SQL rather than a `CommandDefinition`; the private bridge preserves
+command options, including cancellation. Non-public APIs are not covered by Dapper's public API
+compatibility guarantees, so the bridge checks the required method signature at runtime.
+
+The bridge resolves on the first relation query and validates the full parameter and return types
+and generic constraints. If no unique compatible method is found, or delegate binding fails, it
+throws `NotSupportedException` identifying the loaded assembly and its informational and assembly
+versions, the expected method signature, the validated Dapper baseline, and recovery steps.
+It does not silently fall back to execution that loses command options. Flat queries without
+relationships use ordinary Dapper calls and do not initialize the private bridge.
+
+**Consumers may use a newer Dapper version.** The NuGet dependency specifies a minimum version,
+and RazQL does not enforce a version allowlist. Relation mapping proceeds when the bridge finds
+and binds the required method; consumers do not need to wait for RazQL to validate their chosen
+version. The signature check establishes structural compatibility, not identical behavior behind
+an unchanged signature, so consumers should test their queries when upgrading Dapper.
+
+Applications that prefer to stay on the validated baseline can optionally use an exact reference:
+
+```xml
+<PackageReference Include="Dapper" Version="[2.1.89]" />
+```
+
+For applications using central package management, put the exact range in `PackageVersion` instead.
+If a dependency requires a newer version, resolve that requirement explicitly rather than assuming
+an exact reference can override it. When reporting a compatibility issue, include the resolved
+Dapper package version (`dotnet list package --include-transitive`) and the full exception.
+
+Before adopting another Dapper version as the supported baseline, update `Directory.Packages.props`
+and run the solution suite and package-consumption check. The suite must pass the bridge's positive
+and incompatible-signature tests, adapter tests for graph mapping and cancellation, and PostgreSQL
+relationship integration tests. Keep the version named in this policy, the XML documentation, and
+the failure message aligned with the validated dependency. CI runs these checks against the
+repository's selected baseline; RazQL does not maintain a Dapper version matrix. This maintainer
+validation process does not restrict consumers from choosing newer versions. This policy applies
+to both `Association` and `Collection` mappings.
 
 ### Relationship Context
 

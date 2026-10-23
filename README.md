@@ -157,6 +157,10 @@ track association conflicts; queries should normally return a consistent associa
 When values differ, the result depends on the order in which rows and mapped relationships are processed.
 
 See the [Dapper mapping details](src/RazQL.Dapper/README.md#association-mapping).
+Relation mapping uses a private Dapper API and is validated with Dapper 2.1.89. Consumers may use
+newer Dapper versions; the bridge checks the required method signature when relations are first used. Read the
+[Dapper compatibility policy](src/RazQL.Dapper/README.md#dapper-compatibility-for-relations-and-multi-mapping)
+before changing the resolved Dapper version; flat queries use ordinary Dapper execution.
 
 ## Template Sources
 

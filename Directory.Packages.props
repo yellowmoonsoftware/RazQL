@@ -4,7 +4,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Dapper" Version="2.1.86" />
+    <PackageVersion Include="Dapper" Version="2.1.89" />
     <!-- RazorEngineCore resolves Roslyn 5.0 in the metapackage; keep the generator aligned with that graph. -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
