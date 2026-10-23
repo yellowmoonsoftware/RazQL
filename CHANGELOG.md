@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0-alpha](https://github.com/yellowmoonsoftware/RazQL/compare/v0.1.0-alpha...v0.2.0-alpha) (2026-10-23)
+
+
+### Features
+
+* add association mapping with query-wide object identity ([30bd3a9](https://github.com/yellowmoonsoftware/RazQL/commit/30bd3a93ccf6c3791ce420f8aa91ba935d6cd8ea))
+
+
+### Bug Fixes
+
+* specify repository for release assets ([4afc004](https://github.com/yellowmoonsoftware/RazQL/commit/4afc0042680f1faa16d3b2a7f8277bf78f709e73))
+
 ## 0.1.0-alpha (2026-09-20)
 
 
