@@ -2,11 +2,13 @@ namespace RazQL.Dapper.Mapping;
 
 public class CachedQueryResultMapper<TResult>(CorrelatedSequentialResultMap resultMap) : QueryResultMapper<TResult>
 {
-    private readonly ObjectCache _cache = new();
+    private readonly ObjectCache _cache = new(resultMap.IdentitySelectors);
+    private readonly HashSet<ObjectCache.CacheValue> _roots = new(ReferenceEqualityComparer.Instance);
 
     public (TResult, bool) ApplyResultRow(object[] objects)
     {
-        var (root, newlyAdded) = _cache.Get(objects[0], typeof(TResult));
+        var (root, _) = _cache.Get(objects[0], typeof(TResult));
+        var newlyAdded = _roots.Add(root);
 
         foreach (var (relation, objectIndex, parentObjectIndex) in resultMap.CorrelatedRelations)
         {

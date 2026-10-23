@@ -58,11 +58,13 @@ public record CollectionRelation(
     }
 }
 
-public record ResultMap<TResult>(IReadOnlyList<Relation> Relations)
+public record ResultMap<TResult>(
+    IReadOnlyList<Relation> Relations,
+    IReadOnlyDictionary<Type, Func<object, object?>> IdentitySelectors)
 {
     public Type ResultType => typeof(TResult);
     public bool HasMappedAssociations { get; } = Relations.Any();
-    
+
     public static ResultMap<TResult> Create(Action<IResultMapBuilder<TResult>> action)
     {
         var builder = new ResultMapBuilder<TResult>();
@@ -86,11 +88,37 @@ class Indexer(int initial = 0)
 public class ResultMapBuilder<TResult> : IResultMapBuilder<TResult>
 {
     private readonly List<Relation> _relations = new();
+    private readonly Dictionary<Type, Func<object, object?>> _identitySelectors;
+
+    /// <summary>Creates an independent result map and query-wide identity registry.</summary>
+    public ResultMapBuilder() : this(new Dictionary<Type, Func<object, object?>>())
+    {
+    }
+
+    private ResultMapBuilder(Dictionary<Type, Func<object, object?>> identitySelectors)
+    {
+        _identitySelectors = identitySelectors;
+    }
+
+    /// <inheritdoc />
+    public IResultMapBuilder<TResult> Identity<TKey>(Func<TResult, TKey> identitySelector)
+    {
+        ArgumentNullException.ThrowIfNull(identitySelector);
+
+        if (!_identitySelectors.TryAdd(typeof(TResult), value => identitySelector((TResult)value)))
+        {
+            throw new InvalidOperationException(
+                $"An identity selector is already registered for mapped type '{typeof(TResult)}'. " +
+                "Register it once; it applies to every occurrence of that type in the query.");
+        }
+
+        return this;
+    }
     
     public IResultMapBuilder<TResult> Association<TEntity>(string column, Expression<Func<TResult, TEntity>> associationSelector, Action<IResultMapBuilder<TEntity>>? buildMap = null) where TEntity : class?
     {
         // build any relationships on target 
-        var entityMapBuilder = new ResultMapBuilder<TEntity>();
+        var entityMapBuilder = new ResultMapBuilder<TEntity>(_identitySelectors);
         buildMap?.Invoke(entityMapBuilder);
         var entityResultMap = entityMapBuilder.Build();
 
@@ -104,7 +132,7 @@ public class ResultMapBuilder<TResult> : IResultMapBuilder<TResult>
     public IResultMapBuilder<TResult> Collection<TEntity>(string column, Expression<Func<TResult, ICollection<TEntity>>> collectionSelector, bool addNullChildren, Action<IResultMapBuilder<TEntity>>? buildMap = null) where TEntity : class?
     {
         // build any relationships on target 
-        var entityMapBuilder = new ResultMapBuilder<TEntity>();
+        var entityMapBuilder = new ResultMapBuilder<TEntity>(_identitySelectors);
         buildMap?.Invoke(entityMapBuilder);
         var entityResultMap = entityMapBuilder.Build();
 
@@ -117,6 +145,7 @@ public class ResultMapBuilder<TResult> : IResultMapBuilder<TResult>
 
     public ResultMap<TResult> Build()
     {
-        return new ResultMap<TResult>([.. _relations]);
+        return new ResultMap<TResult>([.. _relations],
+            new Dictionary<Type, Func<object, object?>>(_identitySelectors).AsReadOnly());
     }
 }

@@ -26,16 +26,16 @@ public sealed class DapperExecutionAdapter : IExecutionAdapter
 
         var resultMapperMultiMapFunction = resultMapper.MultiMapFunction;
 
-        var result = await connection.QueryMultiMapAsync<TResult?>(commandDefinition,
+        var result = await connection.QueryMultiMapAsync(commandDefinition,
             sequentialResultMap.Types,
             resultMapperMultiMapFunction,
             sequentialResultMap.SplitOn);
 
-        return result.Where(r => r != null).Cast<TResult>();
+        return result.Where(row => row.HasResult).Select(row => row.Value!);
     }
 
     /// <inheritdoc />
-    public Task<TResult?> QuerySingleOrDefaultAsync<TResult>(
+    public async Task<TResult?> QuerySingleOrDefaultAsync<TResult>(
         DbConnection connection,
         ParameterizedQueryResult<TResult> parameterizedQueryResult,
         CancellationToken cancellationToken)
@@ -44,13 +44,15 @@ public sealed class DapperExecutionAdapter : IExecutionAdapter
 
         if (!parameterizedQueryResult.ResultMap.HasMappedAssociations)
         {
-            return connection.QuerySingleOrDefaultAsync<TResult>(commandDefinition);
+            return await connection.QuerySingleOrDefaultAsync<TResult>(commandDefinition);
         }
         
         var sequentialResultMap = parameterizedQueryResult.ResultMap.ToCorrelatedSequentialResultMap();
         var resultMapper = sequentialResultMap.CreateResultMapper<TResult>();
 
-        return connection.QuerySingleOrDefaultMultiMapAsync(commandDefinition, sequentialResultMap.Types,
+        var result = await connection.QueryMultiMapAsync(commandDefinition, sequentialResultMap.Types,
             resultMapper.MultiMapFunction, sequentialResultMap.SplitOn);
+
+        return result.Where(row => row.HasResult).Select(row => row.Value!).SingleOrDefault();
     }
 }

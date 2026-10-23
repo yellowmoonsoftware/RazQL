@@ -1,6 +1,10 @@
 namespace RazQL.Dapper.Mapping;
 
-public record CorrelatedSequentialResultMap(Type[] Types, string SplitOn, List<CorrelatedRelation> CorrelatedRelations) 
+public record CorrelatedSequentialResultMap(
+    Type[] Types,
+    string SplitOn,
+    List<CorrelatedRelation> CorrelatedRelations,
+    IReadOnlyDictionary<Type, Func<object, object?>> IdentitySelectors)
 {
     public QueryResultMapper<TResult> CreateResultMapper<TResult>()
     {

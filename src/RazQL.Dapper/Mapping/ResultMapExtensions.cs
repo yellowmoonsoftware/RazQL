@@ -27,7 +27,8 @@ public static class ResultMapExtensions
             return new CorrelatedRelation(rel, i, p);
         }, new Indexer(1)).ToList();
         
-        return new CorrelatedSequentialResultMap(typeCollector.ToArray(), string.Join(",", columns), flatRelations);
+        return new CorrelatedSequentialResultMap(typeCollector.ToArray(), string.Join(",", columns), flatRelations,
+            resultMap.IdentitySelectors);
     }
 
     private static IEnumerable<TResult> Flatten<TResult>(this IEnumerable<Relation> relations,
