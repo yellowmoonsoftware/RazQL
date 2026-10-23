@@ -7,22 +7,60 @@ namespace RazQL.Dapper;
 
 /// <summary>Bridges Dapper's arbitrary-type multi-mapping implementation with command definitions.</summary>
 /// <remarks>
-/// Dapper 2.1.86 does not expose a public overload accepting both a type array and a command definition.
+/// Dapper 2.1.89 does not expose a public overload accepting both a type array and a command definition.
 /// A cached delegate to its private implementation preserves command options, including cancellation.
 /// </remarks>
 public static class DapperExtensions
 {
-    private static readonly MethodInfo MultiMapAsyncMethod = typeof(SqlMapper)
-        .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
-        .Single(m => m.Name == "MultiMapAsync" && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 5 &&
-                     m.GetParameters()[0].ParameterType == typeof(IDbConnection) &&
-                     m.GetParameters()[1].ParameterType == typeof(CommandDefinition) &&
-                     m.GetParameters()[2].ParameterType == typeof(Type[]) &&
-                     m.GetParameters()[3].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>) &&   
-                     m.GetParameters()[4].ParameterType == typeof(string
-                     ));
+    private static readonly Lazy<MethodInfo> MultiMapAsyncMethod = new(() => FindMultiMapAsyncMethod(typeof(SqlMapper)));
     
     private static readonly ConcurrentDictionary<Type, Delegate> DelegateCache = new();
+
+    internal static MethodInfo FindMultiMapAsyncMethod(Type mapperType)
+    {
+        var methods = mapperType.GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+            .Where(IsMultiMapAsyncMethod).ToArray();
+        if (methods.Length != 1)
+        {
+            throw CreateCompatibilityException(mapperType,
+                $"Expected exactly one compatible non-public static MultiMapAsync<TResult> method; found {methods.Length}.");
+        }
+
+        return methods[0];
+    }
+
+    private static bool IsMultiMapAsyncMethod(MethodInfo method)
+    {
+        if (method.Name != "MultiMapAsync" || !method.IsGenericMethodDefinition || method.GetGenericArguments().Length != 1)
+        {
+            return false;
+        }
+
+        var resultType = method.GetGenericArguments()[0];
+        if (resultType.GenericParameterAttributes != GenericParameterAttributes.None || resultType.GetGenericParameterConstraints().Length != 0)
+        {
+            return false;
+        }
+
+        return method.ReturnType == typeof(Task<>).MakeGenericType(typeof(IEnumerable<>).MakeGenericType(resultType)) &&
+               method.GetParameters().Select(parameter => parameter.ParameterType).SequenceEqual(
+               [
+                   typeof(IDbConnection), typeof(CommandDefinition), typeof(Type[]),
+                   typeof(Func<,>).MakeGenericType(typeof(object[]), resultType), typeof(string)
+               ]);
+    }
+
+    private static NotSupportedException CreateCompatibilityException(Type mapperType, string reason, Exception? innerException = null)
+    {
+        var assembly = mapperType.Assembly;
+        var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unavailable";
+        return new NotSupportedException(
+            $"RazQL.Dapper cannot execute association/collection multi-mapping with loaded assembly '{assembly.GetName().Name}' " +
+            $"(informational version '{version}', assembly version '{assembly.GetName().Version}'). {reason} " +
+            "The required signature is Task<IEnumerable<TResult>> MultiMapAsync<TResult>(IDbConnection, CommandDefinition, Type[], Func<object[], TResult>, string). " +
+            "This RazQL.Dapper build is validated with Dapper 2.1.89. Pin that Dapper package version or use a RazQL.Dapper release validated with your Dapper version. " +
+            "Queries without mapped relationships do not use this bridge.", innerException);
+    }
 
     private static Func<IDbConnection, 
         CommandDefinition, 
@@ -34,11 +72,18 @@ public static class DapperExtensions
         return (Func<IDbConnection, CommandDefinition, Type[], Func<object[], TResult>, string,
             Task<IEnumerable<TResult>>>)DelegateCache.GetOrAdd(typeof(TResult), t =>
         {
-            var multiMapMethodForTResult = MultiMapAsyncMethod.MakeGenericMethod(typeof(TResult));
-
-            return Delegate.CreateDelegate(
-                typeof(Func<IDbConnection, CommandDefinition, Type[], Func<object[], TResult>, string,
-                    Task<IEnumerable<TResult>>>), multiMapMethodForTResult);
+            var method = MultiMapAsyncMethod.Value;
+            try
+            {
+                var multiMapMethodForTResult = method.MakeGenericMethod(typeof(TResult));
+                return Delegate.CreateDelegate(
+                    typeof(Func<IDbConnection, CommandDefinition, Type[], Func<object[], TResult>, string,
+                        Task<IEnumerable<TResult>>>), multiMapMethodForTResult);
+            }
+            catch (Exception exception) when (exception is ArgumentException or MemberAccessException)
+            {
+                throw CreateCompatibilityException(typeof(SqlMapper), "The multi-mapping delegate could not be created.", exception);
+            }
         });
     }
     
@@ -50,6 +95,7 @@ public static class DapperExtensions
     /// <param name="map">The callback invoked with the objects materialized for each row.</param>
     /// <param name="splitOn">The comma-separated first-column names for groups after the root.</param>
     /// <returns>The callback results, buffered when requested by the command.</returns>
+    /// <exception cref="NotSupportedException">The loaded Dapper assembly does not provide a compatible multi-mapping implementation.</exception>
     public static Task<IEnumerable<TResult>> QueryMultiMapAsync<TResult>(this IDbConnection connection, CommandDefinition commandDefinition, Type[] types, Func<object[], TResult> map, string splitOn)
     {
         var multiMapDelegate = GetDelegate<TResult>();
@@ -65,6 +111,7 @@ public static class DapperExtensions
     /// <param name="splitOn">The comma-separated split-column names.</param>
     /// <returns>The callback result, or its default value when there are no rows.</returns>
     /// <exception cref="InvalidOperationException">More than one callback result is produced.</exception>
+    /// <exception cref="NotSupportedException">The loaded Dapper assembly does not provide a compatible multi-mapping implementation.</exception>
     /// <remarks>This helper checks physical callback results; graph-root filtering is performed by the execution adapter.</remarks>
     public static async Task<TResult?> QuerySingleOrDefaultMultiMapAsync<TResult>(this IDbConnection connection,
         CommandDefinition commandDefinition, Type[] types, Func<object[], TResult> map, string splitOn)
