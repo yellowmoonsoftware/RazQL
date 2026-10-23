@@ -53,7 +53,17 @@ accepted under the repository's [MIT License](LICENSE).
 The Release Please workflow uses Conventional Commits on `main` to open a
 release pull request. It updates `CHANGELOG.md`, the release manifest, and the
 shared version in `src/Directory.Build.props`; all five packages use that version.
-The release pull request receives the same CI checks as other changes. Merging it
-creates a prerelease tag and GitHub release. There is no NuGet publishing step yet;
-package publication, symbol packages, and broader integration tests remain
-separate follow-up work.
+The release pull request receives the same CI checks as other changes. Merge it only
+after its proposed version and all checks have been verified. Merging it creates a
+version tag and a non-prerelease GitHub release. The tag workflow verifies that the
+tag matches the shared project version, builds and tests the solution, checks package
+consumption, and publishes all five packages to NuGet.org through Trusted Publishing.
+Package and runtime symbol-package artifacts are also attached to the GitHub release.
+
+Non-alpha releases start at `0.1.0`; the older alpha tags remain part of the history.
+During `0.x` development, features and breaking changes increment the minor version,
+and compatible fixes increment the patch version. Release Please uses its default
+versioning strategy with `bump-minor-pre-major` enabled. A deliberate one-time version
+override belongs in a merged commit's `Release-As: <version>` footer; do not leave a
+permanent `release-as` setting in the configuration. The release manifest records the
+last released version and should be updated by the release PR, not in advance.

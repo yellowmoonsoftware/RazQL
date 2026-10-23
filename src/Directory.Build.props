@@ -11,7 +11,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>razql-icon.png</PackageIcon>
-    <PackageReleaseNotes>Initial alpha release. See https://github.com/yellowmoonsoftware/RazQL/releases for details.</PackageReleaseNotes>
+    <PackageReleaseNotes>Early-development 0.x release with Razor SQL templates, parameter binding, generated mappers, and optional Dapper association mapping. See https://github.com/yellowmoonsoftware/RazQL/releases for changes and compatibility notes.</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)../assets/razql-icon.png" Pack="true" PackagePath="razql-icon.png"/>

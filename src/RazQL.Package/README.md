@@ -5,13 +5,13 @@ RazQL (pronounced “rascal”) builds and executes parameterized SQL from trust
 ## Installation
 
 ```shell
-dotnet package add RazQL --prerelease
+dotnet package add RazQL
 ```
 
 Add the optional Microsoft dependency-injection integration separately:
 
 ```shell
-dotnet package add RazQL.DependencyInjection --prerelease
+dotnet package add RazQL.DependencyInjection
 ```
 
 ## Mapper Example
@@ -35,10 +35,12 @@ Razor templates execute as application code and must not contain untrusted sourc
 
 ## Deployment Compatibility
 
-Native AOT is not supported because RazQL compiles Razor templates at runtime,
-including during startup preloading. Single-file publishing is different: a
-.NET 10 framework-dependent, untrimmed smoke test passed with RazorEngineCore
-2026.1.1 on macOS x64, but the complete RazQL stack has not been validated.
-Self-contained single-file publishing and trimming are also untested. If you
-use file-system templates, deploy them as separate files alongside the app;
+RazQL targets .NET 10 with ordinary, untrimmed, framework-dependent JIT deployment.
+Native AOT is unsupported because templates are compiled and generated assemblies
+are loaded at runtime, including during startup preloading. Trimming, self-contained
+publishing, and single-file publishing are outside this release's validated scope.
+File-system templates must be deployed separately alongside the app;
 embedded-resource templates do not require separate template files.
+
+Non-alpha releases start at `0.1.0`. During early `0.x` development, minor releases
+may change public APIs and behavior; patch releases are intended for compatible fixes.
