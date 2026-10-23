@@ -1,8 +1,8 @@
 # RazQL
 
-RazQL (pronounced “rascal”) is an experimental .NET library for building and executing parameterized SQL from Razor templates. It takes inspiration from MyBatis mapper interfaces while using source generation, [RazorEngineCore](https://github.com/adoconnection/RazorEngineCore), and [Dapper](https://github.com/DapperLib/Dapper).
+RazQL (pronounced “rascal”) is a .NET library for building and executing parameterized SQL from Razor templates. It takes inspiration from MyBatis mapper interfaces while using source generation, [RazorEngineCore](https://github.com/adoconnection/RazorEngineCore), and [Dapper](https://github.com/DapperLib/Dapper).
 
-The project is being prepared for an initial open source release. No stable NuGet package has been published yet, and the public API may change before version 1.0.
+The first non-alpha release is `0.1.0`. RazQL remains in early development: `0.x` minor releases may change public APIs and behavior. Patch releases are intended for compatible fixes. Review the changelog when upgrading.
 
 ## Projects
 
@@ -17,13 +17,13 @@ The project is being prepared for an initial open source release. No stable NuGe
 Install the standard package to reference the runtime and activate the generator:
 
 ```shell
-dotnet package add RazQL --prerelease
+dotnet package add RazQL
 ```
 
 Add Microsoft dependency-injection integration separately:
 
 ```shell
-dotnet package add RazQL.DependencyInjection --prerelease
+dotnet package add RazQL.DependencyInjection
 ```
 
 ## Mapper Example
@@ -174,17 +174,22 @@ Use `RazQLTemplateSourceAttribute` on an interface for shared configuration and 
 
 ## Deployment Compatibility
 
-RazQL does not support Native AOT. It compiles Razor SQL templates through
-RazorEngineCore at runtime, including when templates are preloaded at startup;
-Native AOT does not support runtime code generation or dynamic assembly loading.
+RazQL targets .NET 10 and requires .NET SDK 10.0.100 or newer in the .NET 10 line
+to build generated mappers. The supported deployment model is an ordinary, untrimmed,
+framework-dependent application using the JIT runtime. CI validates the minimum and current
+.NET 10 SDKs on Linux.
 
-Single-file publishing is a separate deployment mode. RazorEngineCore 2026.1.1
-compiled and ran a template in a .NET 10, macOS x64, framework-dependent
-single-file smoke test with trimming disabled. That does not establish support
-for the full RazQL stack. Self-contained single-file publishing and trimming
-have not been validated. File-system templates must still be deployed as
-separate content under `AppContext.BaseDirectory`; embedded-resource templates
-avoid that external-file requirement.
+RazQL generates SQL and parameters; the execution adapter and ADO.NET provider perform
+database operations. SQL syntax and provider-specific parameter types are the application's
+responsibility. PostgreSQL exercises the complete pipeline in integration tests; other providers
+are not restricted by an allowlist and should be verified with the application's own queries.
+The Dapper adapter's relation-mapping compatibility policy is documented above.
+
+Native AOT is unsupported because RazorEngineCore compiles templates and loads generated
+assemblies at runtime, including during startup preloading. Trimming, self-contained publishing,
+and single-file publishing are outside this release's validated deployment scope. File-system
+templates must be deployed as separate content under `AppContext.BaseDirectory`;
+embedded-resource templates avoid that external-file requirement.
 
 ## Build and Test
 
@@ -199,7 +204,17 @@ dotnet test RazQL.slnx
 
 ## Status
 
-RazQL is a proof of concept moving toward its first public release. Release Please prepares a single version and changelog for all five packages, starting at `0.1.0-alpha`. CI builds and tests on .NET 10 and verifies a clean package-only consumer. Tagged GitHub releases publish the verified packages and runtime symbol packages to NuGet.org through Trusted Publishing. Source Link metadata connects the published symbols to the matching repository commit.
+RazQL provides parameter binding, generated mapper implementations, template preloading, and
+optional Dapper graph mapping without ORM-style change tracking. Relation mapping adds identity
+and collection-membership caches; large joins that multiply rows can consume substantial memory.
+Flat queries avoid graph-assembly overhead. No performance targets or benchmark claims are made
+for this release.
+
+Release Please maintains one version and changelog for all five packages. Non-alpha releases
+start at `0.1.0`; earlier alpha releases remain available in the release history. CI builds and
+tests on .NET 10 and verifies a clean package-only consumer. Tagged GitHub releases publish the
+verified packages and runtime symbol packages to NuGet.org through Trusted Publishing.
+Source Link metadata connects the published symbols to the matching repository commit.
 
 ## Community
 

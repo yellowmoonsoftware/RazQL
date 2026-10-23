@@ -23,7 +23,7 @@ body:
     id: version
     attributes:
       label: Package version or commit
-      placeholder: 0.1.0-alpha or a commit SHA
+      placeholder: 0.1.0 or a commit SHA
     validations:
       required: true
   - type: textarea
