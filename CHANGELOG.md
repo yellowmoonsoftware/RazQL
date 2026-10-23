@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.0-alpha.1](https://github.com/yellowmoonsoftware/RazQL/compare/v0.1.0-alpha...v0.1.0-alpha.1) (2026-10-23)
+## [0.2.0-alpha](https://github.com/yellowmoonsoftware/RazQL/compare/v0.1.0-alpha...v0.2.0-alpha) (2026-10-23)
 
 
 ### Features
