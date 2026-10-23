@@ -8,6 +8,57 @@ namespace RazQL.Dapper.Tests.Mapping;
 public class ResultMapIdentityTests
 {
     [Fact]
+    public void ApplyResultRow_RestoresAnEarlierAssociationWhileDeduplicatingCollectionChildren()
+    {
+        var map = ResultMap<Album>.Create(album => album
+            .Identity(value => value.Id)
+            .Association<Artist?>("PrimaryArtistId", value => value.PrimaryArtist, artist => artist
+                .Identity(value => value!.Id))
+            .Collection<Artist>("ArtistId", value => value.Artists));
+        var mapper = map.ToCorrelatedSequentialResultMap().CreateResultMapper<Album>();
+        var firstArtist = new Artist { Id = 10 };
+        var secondArtist = new Artist { Id = 20 };
+
+        var (album, _) = mapper.ApplyResultRow([new Album { Id = 1 }, firstArtist, new Artist { Id = 10 }]);
+        Assert.Same(firstArtist, album.PrimaryArtist);
+
+        mapper.ApplyResultRow([new Album { Id = 1 }, secondArtist, new Artist { Id = 20 }]);
+        Assert.Same(secondArtist, album.PrimaryArtist);
+
+        mapper.ApplyResultRow([new Album { Id = 1 }, new Artist { Id = 10 }, new Artist { Id = 10 }]);
+
+        Assert.Same(firstArtist, album.PrimaryArtist);
+        Assert.Collection(album.Artists,
+            value => Assert.Same(firstArtist, value),
+            value => Assert.Same(secondArtist, value));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ApplyResultRow_AssociationsUseTheLastValueIncludingRepeatedNulls(bool nullFirst)
+    {
+        var map = ResultMap<Album>.Create(album => album
+            .Identity(value => value.Id)
+            .Association<Artist?>("PrimaryArtistId", value => value.PrimaryArtist, artist => artist
+                .Identity(value => value!.Id)));
+        var mapper = map.ToCorrelatedSequentialResultMap().CreateResultMapper<Album>();
+        var artist = new Artist { Id = 10 };
+        var original = new Album { Id = 1, PrimaryArtist = new Artist { Id = -1 } };
+
+        var (album, _) = mapper.ApplyResultRow([original, nullFirst ? null! : artist]);
+        Assert.Same(nullFirst ? null : artist, album.PrimaryArtist);
+
+        mapper.ApplyResultRow([new Album { Id = 1 }, nullFirst ? artist : null!]);
+        Assert.Same(nullFirst ? artist : null, album.PrimaryArtist);
+
+        mapper.ApplyResultRow([new Album { Id = 1 }, nullFirst ? null! : new Artist { Id = 10 }]);
+
+        Assert.Same(original, album);
+        Assert.Same(nullFirst ? null : artist, album.PrimaryArtist);
+    }
+
+    [Fact]
     public void ApplyResultRow_CreatesCollectionsPerOwnerAndPropertyWhileSharingChildren()
     {
         var calls = 0;

@@ -84,6 +84,10 @@ and `Collection` relationships without emitting SQL. `Identity` accepts a functi
 a scalar or tuple key and applies once per mapped type throughout the tree. Types without a
 selector use DTO equality and hash codes. The result-map builders and metadata are in `RazQL.Binding`.
 
+Single-object associations assign every mapped value, including null, so the last assignment wins.
+Only collections opt into deduplicating repeated owner-property-child applications. Association
+conflicts are not tracked.
+
 `SqlGenerator` creates a new binder and result-map builder for each execution of the cached
 template. Its `ParameterizedQueryResult<TResult>` carries the SQL, parameters, and map to
 `IExecutionAdapter`. The non-generic `ParameterizedQueryResult` base exposes just SQL and
