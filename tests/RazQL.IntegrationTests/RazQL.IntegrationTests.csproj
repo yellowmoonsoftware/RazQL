@@ -28,6 +28,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Mappers/SqlTemplates/TestArtistMapper/FindWithResource.sql.cshtml" />
     <EmbeddedResource Include="Mappers/SqlTemplates/TestArtistMapper/Search.sql.cshtml" />
+    <EmbeddedResource Include="Mappers/SqlTemplates/TestArtistMapper/FindWithCredits.sql.cshtml" />
     <EmbeddedResource Include="Mappers/Overrides/SqlTemplates/TestArtistMapper/LocatedArtist.sql.cshtml" />
     <Content Include="Mappers/SqlTemplates/TestArtistMapper/FindWithFileSystem.sql.cshtml"
              CopyToOutputDirectory="PreserveNewest"

@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="RazQL.Dapper.Tests" />
     <ProjectReference Include="../RazQL/RazQL.csproj" />
     <None Update="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>

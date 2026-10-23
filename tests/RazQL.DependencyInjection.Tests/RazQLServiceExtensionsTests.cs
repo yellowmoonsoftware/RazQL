@@ -338,10 +338,10 @@ public sealed class ReplacementParameterNameProviderFactory : IParameterNameProv
 public sealed class ReplacementExecutionAdapter : IExecutionAdapter
 {
     public Task<IEnumerable<TResult>> QueryAsync<TResult>(DbConnection connection,
-        ParameterizedQueryResult parameterizedQueryResult, CancellationToken cancellationToken) =>
+        ParameterizedQueryResult<TResult> parameterizedQueryResult, CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 
     public Task<TResult?> QuerySingleOrDefaultAsync<TResult>(DbConnection connection,
-        ParameterizedQueryResult parameterizedQueryResult, CancellationToken cancellationToken) =>
+        ParameterizedQueryResult<TResult> parameterizedQueryResult, CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 }

@@ -1,0 +1,15 @@
+namespace RazQL.IntegrationTests.Models;
+
+public sealed class ArtistGraph
+{
+    public long Id { get; set; }
+    public string Name { get; set; } = "";
+    public ICollection<ArtistCredit> Credits { get; } = new List<ArtistCredit>();
+    public Artist? PrimaryArtist { get; set; }
+}
+
+public sealed class ArtistCredit
+{
+    public long Id { get; set; }
+    public required Artist Artist { get; set; }
+}

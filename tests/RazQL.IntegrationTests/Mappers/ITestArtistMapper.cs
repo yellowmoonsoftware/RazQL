@@ -7,6 +7,8 @@ namespace RazQL.IntegrationTests.Mappers;
 [RazQLMapper]
 public interface ITestArtistMapper
 {
+    Task<ArtistGraph?> FindWithCreditsAsync(string name, CancellationToken cancellationToken = default);
+
     [RazQLQuery("select id, name from gmdb.artist where name = @Model.Bind()")]
     Task<Artist?> FindWithInlineQueryAsync(string name, CancellationToken cancellationToken = default);
 

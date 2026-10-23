@@ -8,7 +8,7 @@
 
 1. Resolves source through `ITemplateSourceLoaderResolver`.
 2. Compiles and caches the Razor template through `ITemplateCache`.
-3. Evaluates it through `ISqlGenerator`, collecting provider-neutral parameters.
+3. Evaluates it through `ISqlGenerator`, collecting provider-neutral parameters and a `ResultMap<TResult>`.
 4. Opens a connection from `DbDataSource` and executes through `IQueryExecutor` and the selected `IExecutionAdapter`.
 
 Successful template compilations remain cached. Failed or canceled source loading and compilation are evicted, so a later request can retry. The package does not create a provider-specific `DbDataSource`; the application must supply one.
@@ -61,10 +61,11 @@ under `AppContext.BaseDirectory`.
 
 ## Binding Values
 
-Templates derive from `RazQLModel<TCriteria>`. Bind data instead of writing model values directly into SQL:
+Templates derive from `RazQLModel<TCriteria, TResult>`, where `TResult` is the mapped row-object type,
+even for methods returning a sequence. Bind data instead of writing model values directly into SQL:
 
 ```razor
-@inherits RazQL.RazQLModel<ArtistCriteria>
+@inherits RazQL.RazQLModel<ArtistCriteria, Artist>
 select id, name
 from artist
 where 1 = 1
@@ -75,5 +76,22 @@ where 1 = 1
 ```
 
 The binder supports scalar values, transformed values, array parameters, null checks, collection iteration, and enum-to-SQL `ORDER BY` mapping. Column expressions supplied to `OrderBy` must come from trusted application code.
+
+## Result Maps
+
+`ResultMap(...)` in a Razor code block describes the root identity and nested `Association`
+and `Collection` relationships without emitting SQL. `Identity` accepts a function returning
+a scalar or tuple key and applies once per mapped type throughout the tree. Types without a
+selector use DTO equality and hash codes. The result-map builders and metadata are in `RazQL.Binding`.
+
+`SqlGenerator` creates a new binder and result-map builder for each execution of the cached
+template. Its `ParameterizedQueryResult<TResult>` carries the SQL, parameters, and map to
+`IExecutionAdapter`. The non-generic `ParameterizedQueryResult` base exposes just SQL and
+parameters to conversion helpers. Execution adapters are responsible for interpreting relationships;
+the core runtime has no Dapper dependency.
+
+The [main README](../../README.md#association-mapping) includes a complete relationship example.
+The [Dapper adapter](../RazQL.Dapper/README.md#association-mapping) documents column groups,
+shared object identity, missing children, and current limitations.
 
 Razor templates are compiled and executed as .NET code. Never accept template source from an untrusted user or external system without an appropriate security boundary.

@@ -13,7 +13,7 @@ public interface IExecutionAdapter
     /// <returns>A task containing the mapped rows.</returns>
     Task<IEnumerable<TResult>> QueryAsync<TResult>(
         DbConnection connection,
-        ParameterizedQueryResult parameterizedQueryResult,
+        ParameterizedQueryResult<TResult> parameterizedQueryResult,
         CancellationToken cancellationToken);
 
     /// <summary>Executes a query that returns zero or one mapped row.</summary>
@@ -24,6 +24,6 @@ public interface IExecutionAdapter
     /// <returns>A task containing the mapped row or its default value.</returns>
     Task<TResult?> QuerySingleOrDefaultAsync<TResult>(
         DbConnection connection,
-        ParameterizedQueryResult parameterizedQueryResult,
+        ParameterizedQueryResult<TResult> parameterizedQueryResult,
         CancellationToken cancellationToken);
 }

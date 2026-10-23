@@ -1,0 +1,22 @@
+@using RazQL.Binding
+@using RazQL.IntegrationTests.Models
+@inherits RazQL.RazQLModel<string, ArtistGraph>
+@{
+    ResultMap(root => root
+        .Identity(value => value.Id)
+        .Collection<ArtistCredit>("id", value => value.Credits, credit => credit
+            .Identity(value => value.Id)
+            .Association<Artist>("id", value => value.Artist, artist => artist
+                .Identity(value => value.Id)))
+        .Association<Artist?>("id", value => value.PrimaryArtist));
+}
+select root.id, root.name,
+       credit.id,
+       contributor.id, contributor.name,
+       primary_artist.id, primary_artist.name
+from gmdb.artist root
+left join (values (1::bigint), (2::bigint)) credit(id) on root.name = 'AC/DC'
+left join gmdb.artist contributor on contributor.id = root.id and credit.id is not null
+join gmdb.artist primary_artist on primary_artist.id = root.id
+where root.name = @Bind(value => value)
+order by root.id, credit.id

@@ -1,6 +1,6 @@
 # RazQL
 
-RazQL (pronounced “rascal”) is an experimental .NET library for building and executing parameterized SQL from Razor templates. It takes inspiration from MyBatis mapper interfaces while using source generation, RazorEngineCore, and Dapper.
+RazQL (pronounced “rascal”) is an experimental .NET library for building and executing parameterized SQL from Razor templates. It takes inspiration from MyBatis mapper interfaces while using source generation, [RazorEngineCore](https://github.com/adoconnection/RazorEngineCore), and [Dapper](https://github.com/DapperLib/Dapper).
 
 The project is being prepared for an initial open source release. No stable NuGet package has been published yet, and the public API may change before version 1.0.
 
@@ -47,7 +47,7 @@ SqlTemplates/ArtistMapper/FindById.sql.cshtml
 ```
 
 ```razor
-@inherits RazQL.RazQLModel<long>
+@inherits RazQL.RazQLModel<long, Artist>
 select id, name
 from artist
 where id = @Model.Bind()
@@ -66,6 +66,82 @@ services.AddRazQL(builder => builder
 Applications using another execution adapter can reference `RazQL.Core`, `RazQL.Generators`, and `RazQL.DependencyInjection` directly without installing Dapper.
 
 Template values should be emitted through `Bind`, `BindAsArray`, and the other data-binder helpers. Razor template source is compiled and executed as .NET code and must therefore be treated as trusted application code.
+
+## Association Mapping
+
+Templates can describe single-object associations and child collections alongside their SQL.
+The second type argument of `RazQLModel<TCriteria, TResult>` is the mapped **row object**,
+including when the mapper method returns `Task<IEnumerable<TResult>>`.
+
+For example, an album can contain songs, contributing artists, and a primary artist:
+
+```csharp
+public sealed class Album
+{
+    public long Id { get; set; }
+    public string Title { get; set; } = "";
+    public ICollection<Song> Songs { get; } = new List<Song>();
+    public Artist? PrimaryArtist { get; set; }
+}
+
+public sealed class Song
+{
+    public long Id { get; set; }
+    public string Title { get; set; } = "";
+    public ICollection<Artist> Artists { get; } = new List<Artist>();
+}
+
+public sealed record Artist(long Id, string Name);
+```
+
+The mapper method can return `Task<IEnumerable<Album>>` and accept `ICollection<long>`:
+
+```razor
+@using RazQL.Binding
+@using Example.Models
+@inherits RazQL.RazQLModel<ICollection<long>, Album>
+@{
+    ResultMap(album => album
+        .Identity(value => value.Id)
+        .Collection<Song>("id", value => value.Songs, song => song
+            .Identity(value => value.Id)
+            .Collection<Artist>("id", value => value.Artists, artist => artist
+                .Identity(value => value.Id)))
+        .Association<Artist?>("id", value => value.PrimaryArtist));
+}
+select album.id, album.title,
+       song.id, song.title,
+       contributor.id, contributor.name,
+       primary_artist.id, primary_artist.name
+from album
+left join song on song.album_id = album.id
+left join song_artist on song_artist.song_id = song.id
+left join artist contributor on contributor.id = song_artist.artist_id
+left join artist primary_artist on primary_artist.id = album.primary_artist_id
+where album.id = any(@Model.BindAsArray())
+```
+
+The column groups follow the relationship tree in depth-first order: album, song,
+song artist, then primary artist. The string passed to `Collection` or `Association`
+identifies the first column in a child group for Dapper's `splitOn`; it does not define identity.
+For optional joined objects, that first column must be null when the object is absent.
+Missing children are omitted from collections by default. Collections must be initialized
+by the DTO, and single-object association properties need setters.
+
+Register `Identity` once per mapped type anywhere in the tree. The provider is shared by
+every occurrence of that type in the query. An artist referenced by `PrimaryArtist` and a
+song's artist collection therefore uses the same in-memory instance when its identity matches.
+Composite identities can use tuples, for example `.Identity(value => (value.TenantId, value.Id))`.
+Types without an identity provider use their DTO equality and hash code; custom DTO overrides
+are optional. Identity equality and hash codes must remain stable during mapping.
+
+The Dapper adapter assembles all joined rows before returning results. Repeated root identities
+produce one result, and single-result queries check the number of distinct roots rather than
+the number of joined rows. Queries without relationships use ordinary Dapper execution and
+do not deduplicate rows merely because an identity was configured. Object caches belong to
+one execution, so subsequent queries create independent objects.
+
+See the [Dapper mapping details and current limitations](src/RazQL.Dapper/README.md#association-mapping).
 
 ## Template Sources
 

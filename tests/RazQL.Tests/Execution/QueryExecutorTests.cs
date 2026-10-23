@@ -20,18 +20,19 @@ public class QueryExecutorTests
         var descriptor = CreateManyDescriptor();
         var criteria = new QueryCriteria { Name = "Tom" };
         var parameters = Substitute.For<IParameterBag>();
-        var generatedQuery = new ParameterizedQueryResult("select id, name from artist", parameters);
+        var generatedQuery = new ParameterizedQueryResult<QueryResult>("select id, name from artist", parameters,
+            ResultMap<QueryResult>.Create(map => map.Identity(result => result.Id)));
         var expected = new[]
         {
             new QueryResult { Id = 1, Name = "Tom Petty" },
             new QueryResult { Id = 2, Name = "David A. Stewart" }
         };
         using var cancellation = new CancellationTokenSource();
-        sqlGenerator.ApplyCriteriaAsync(descriptor, criteria, cancellation.Token)
+        sqlGenerator.ApplyCriteriaAsync<QueryCriteria, QueryResult>(descriptor, criteria, cancellation.Token)
             .Returns(Task.FromResult(generatedQuery));
         executionAdapter.QueryAsync<QueryResult>(
                 Arg.Any<DbConnection>(),
-                Arg.Any<ParameterizedQueryResult>(),
+                Arg.Any<ParameterizedQueryResult<QueryResult>>(),
                 cancellation.Token)
             .Returns(expected);
         var executor = new QueryExecutor(dataSource, sqlGenerator, executionAdapter, Substitute.For<ILogger<QueryExecutor>>());
@@ -42,7 +43,7 @@ public class QueryExecutorTests
             cancellation.Token);
 
         Assert.Same(expected, result);
-        await sqlGenerator.Received(1).ApplyCriteriaAsync(descriptor, criteria, cancellation.Token);
+        await sqlGenerator.Received(1).ApplyCriteriaAsync<QueryCriteria, QueryResult>(descriptor, criteria, cancellation.Token);
         await executionAdapter.Received(1).QueryAsync<QueryResult>(
             dataSource.LastConnection!,
             generatedQuery,
@@ -60,13 +61,14 @@ public class QueryExecutorTests
         var descriptor = CreateSingleDescriptor();
         var criteria = new QueryCriteria();
         var parameters = Substitute.For<IParameterBag>();
-        var generatedQuery = new ParameterizedQueryResult("select id, name from artist", parameters);
+        var generatedQuery = new ParameterizedQueryResult<QueryResult>("select id, name from artist", parameters,
+            ResultMap<QueryResult>.Create(map => map.Identity(result => result.Id)));
         QueryResult? expected = hasResult ? new QueryResult { Id = 1, Name = "Tom Petty" } : null;
-        sqlGenerator.ApplyCriteriaAsync(descriptor, criteria, CancellationToken.None)
+        sqlGenerator.ApplyCriteriaAsync<QueryCriteria, QueryResult>(descriptor, criteria, CancellationToken.None)
             .Returns(Task.FromResult(generatedQuery));
         executionAdapter.QuerySingleOrDefaultAsync<QueryResult>(
                 Arg.Any<DbConnection>(),
-                Arg.Any<ParameterizedQueryResult>(),
+                Arg.Any<ParameterizedQueryResult<QueryResult>>(),
                 CancellationToken.None)
             .Returns(expected);
         var executor = new QueryExecutor(dataSource, sqlGenerator, executionAdapter, Substitute.For<ILogger<QueryExecutor>>());
@@ -77,7 +79,7 @@ public class QueryExecutorTests
             CancellationToken.None);
 
         Assert.Same(expected, result);
-        await sqlGenerator.Received(1).ApplyCriteriaAsync(descriptor, criteria, CancellationToken.None);
+        await sqlGenerator.Received(1).ApplyCriteriaAsync<QueryCriteria, QueryResult>(descriptor, criteria, CancellationToken.None);
         await executionAdapter.Received(1).QuerySingleOrDefaultAsync<QueryResult>(
             dataSource.LastConnection!,
             generatedQuery,

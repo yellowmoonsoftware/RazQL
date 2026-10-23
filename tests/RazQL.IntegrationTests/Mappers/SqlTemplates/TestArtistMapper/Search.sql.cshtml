@@ -1,6 +1,6 @@
 @using RazQL.Binding
 @using RazQL.IntegrationTests.Models
-@inherits RazQL.RazQLModel<ArtistDynamicCriteria>
+@inherits RazQL.RazQLModel<ArtistDynamicCriteria, Artist>
 select id, name
 from gmdb.artist
 where 1 = 1

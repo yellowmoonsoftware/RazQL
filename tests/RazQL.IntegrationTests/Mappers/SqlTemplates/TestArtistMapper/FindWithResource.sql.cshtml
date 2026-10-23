@@ -1,5 +1,5 @@
 @using RazQL.Binding
-@inherits RazQL.RazQLModel<RazQL.IntegrationTests.Models.ArtistSearchCriteria>
+@inherits RazQL.RazQLModel<RazQL.IntegrationTests.Models.ArtistSearchCriteria, RazQL.IntegrationTests.Models.Artist>
 select id, name
 from gmdb.artist
 where

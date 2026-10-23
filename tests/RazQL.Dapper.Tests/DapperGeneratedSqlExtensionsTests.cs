@@ -31,7 +31,7 @@ public class DapperGeneratedSqlExtensionsTests
     {
         var bag = Substitute.For<IParameterBag>();
         bag.GetParameters().Returns([new KeyValuePair<string, object?>("id", 42L)]);
-        var query = new ParameterizedQueryResult("select @id", bag);
+        var query = new ParameterizedQueryResult<int>("select @id", bag, ResultMap<int>.Create(_ => { }));
         using var cancellation = new CancellationTokenSource();
 
         var command = query.ToCommandDefinition(cancellation.Token);

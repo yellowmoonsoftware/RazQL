@@ -49,7 +49,7 @@ using var serviceProvider = services.BuildServiceProvider();
 var descriptor = QueryDescriptor.ForExpression<IPackageMapper, int, int>(mapper => mapper.FindAsync);
 const int criteria = 42;
 var generatedQuery = await serviceProvider.GetRequiredService<ISqlGenerator>()
-    .ApplyCriteriaAsync(descriptor, criteria);
+    .ApplyCriteriaAsync<int, int>(descriptor, criteria);
 var parameters = generatedQuery.Parameters.GetParameters().ToArray();
 if (parameters.Length != 1 ||
     string.IsNullOrWhiteSpace(parameters[0].Key) ||
