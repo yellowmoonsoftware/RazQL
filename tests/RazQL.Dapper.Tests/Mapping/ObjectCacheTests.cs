@@ -206,14 +206,16 @@ public class ObjectCacheTests
         var ownerObject = new MutableEntity { Id = 1, Name = "before" };
         var (owner, _) = cache.Get(ownerObject, typeof(MutableEntity));
         var (target, _) = cache.Get(new MutableEntity { Id = 2 }, typeof(MutableEntity));
-        target.AssocOwners.Add(owner);
+        var property = typeof(MutableEntity).GetProperty(nameof(MutableEntity.Name))!;
+        target.AssocOwners.Add(new ObjectCache.AssociationOwner(owner, property));
 
         ownerObject.Name = "after";
         var (resolvedOwner, _) = cache.Get(new MutableEntity { Id = 1 }, typeof(MutableEntity));
 
         Assert.Same(owner, resolvedOwner);
-        Assert.Contains(resolvedOwner, target.AssocOwners);
-        Assert.False(target.AssocOwners.Add(resolvedOwner));
+        var context = new ObjectCache.AssociationOwner(resolvedOwner, property);
+        Assert.Contains(context, target.AssocOwners);
+        Assert.False(target.AssocOwners.Add(context));
     }
 
     [Fact]
