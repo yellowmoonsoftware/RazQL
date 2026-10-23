@@ -32,7 +32,7 @@ public class RazQLModelTests
                 Arg.Any<Func<ModelData, ICollection<OrderSpec<ModelSort>>?>>(),
                 Arg.Any<Func<ModelSort, string?>>())
             .Returns("ORDER BY name ASC");
-        var model = new ExposedRazQLModel { Model = binder };
+        var model = new ExposedRazQLModel { Model = binder, ResultMapBuilder = new ResultMapBuilder<ModelChild>() };
 
         Assert.Equal("@Name", model.Bind(m => m.Name));
         Assert.Equal("@TransformedName", model.Bind(m => m.Name, value => $"%{value}%"));
@@ -69,7 +69,7 @@ public class RazQLModelTests
     }
 }
 
-internal sealed class ExposedRazQLModel : RazQLModel<ModelData>
+internal sealed class ExposedRazQLModel : RazQLModel<ModelData, ModelChild>
 {
     public string ApplyLike(string value) => Like.Compile()(value);
 }

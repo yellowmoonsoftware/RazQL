@@ -1,10 +1,14 @@
 namespace RazQL.Dapper.Mapping;
 
+/// <summary>Assembles relationship graphs using canonical objects shared throughout one query execution.</summary>
+/// <typeparam name="TResult">The root row-object type.</typeparam>
+/// <param name="resultMap">The column groups, relationship indices, and identity providers.</param>
 public class CachedQueryResultMapper<TResult>(CorrelatedSequentialResultMap resultMap) : QueryResultMapper<TResult>
 {
     private readonly ObjectCache _cache = new(resultMap.IdentitySelectors);
     private readonly HashSet<ObjectCache.CacheValue> _roots = new(ReferenceEqualityComparer.Instance);
 
+    /// <inheritdoc />
     public (TResult, bool) ApplyResultRow(object[] objects)
     {
         var (root, _) = _cache.Get(objects[0], typeof(TResult));

@@ -113,9 +113,9 @@ public class GeneratedMapperTests
         var cancellationToken = new CancellationToken(canceled: false);
         var executor = Substitute.For<IQueryExecutor>();
         var templateCache = Substitute.For<ITemplateCache>();
-        var compiledTemplate = Substitute.For<IRazorEngineCompiledTemplate<RazQLModel<TestCriteria>>>();
-        var compilation = new TaskCompletionSource<IRazorEngineCompiledTemplate<RazQLModel<TestCriteria>>>();
-        templateCache.GetTemplateAsync<ITestMapper, TestCriteria, IEnumerable<TestResult>>(
+        var compiledTemplate = Substitute.For<IRazorEngineCompiledTemplate<RazQLModel<TestCriteria, TestResult>>>();
+        var compilation = new TaskCompletionSource<IRazorEngineCompiledTemplate<RazQLModel<TestCriteria, TestResult>>>();
+        templateCache.GetTemplateAsync<TestCriteria, TestResult>(
                 Arg.Any<QueryDescriptor<ITestMapper, TestCriteria, IEnumerable<TestResult>>>(),
                 cancellationToken)
             .Returns(compilation.Task);
@@ -129,7 +129,7 @@ public class GeneratedMapperTests
         Assert.False(tasks[0].IsCompleted);
         compilation.SetResult(compiledTemplate);
         await tasks[0];
-        await templateCache.Received(1).GetTemplateAsync<ITestMapper, TestCriteria, IEnumerable<TestResult>>(
+        await templateCache.Received(1).GetTemplateAsync<TestCriteria, TestResult>(
             Arg.Is<QueryDescriptor<ITestMapper, TestCriteria, IEnumerable<TestResult>>>(descriptor =>
                 descriptor.MapperType == typeof(ITestMapper) &&
                 descriptor.QueryMethod.Name == nameof(ITestMapper.FindAsync)),

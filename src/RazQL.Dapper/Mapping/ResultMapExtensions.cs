@@ -2,6 +2,7 @@ using RazQL.Binding;
 
 namespace RazQL.Dapper.Mapping;
 
+/// <summary>Converts provider-neutral relationship maps into Dapper multi-mapping plans.</summary>
 public static class ResultMapExtensions
 {
     private class Indexer(int initial = 0)
@@ -16,6 +17,10 @@ public static class ResultMapExtensions
         }
     }
     
+    /// <summary>Flattens a relationship tree in the depth-first order required by the selected column groups.</summary>
+    /// <typeparam name="T">The root row-object type.</typeparam>
+    /// <param name="resultMap">The relationship tree and query-wide identity providers.</param>
+    /// <returns>The mapped types, split columns, and owner-child indices.</returns>
     public static CorrelatedSequentialResultMap ToCorrelatedSequentialResultMap<T>(this ResultMap<T> resultMap)
     {
         var typeCollector = new List<Type> { typeof(T) };

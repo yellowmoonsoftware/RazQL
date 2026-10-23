@@ -12,6 +12,55 @@ public class DapperIdentityExecutionTests
 {
     private readonly DapperExecutionAdapter _adapter = new();
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task QueryAsync_HandlesRepeatedMissingCollectionChildren(bool addNullChildren)
+    {
+        var table = CreateArtistTable();
+        table.Rows.Clear();
+        table.Rows.Add(1, DBNull.Value, DBNull.Value);
+        table.Rows.Add(1, DBNull.Value, DBNull.Value);
+        using var connection = new TableConnection(table);
+        var query = Query(ResultMap<AlbumWithOptionalArtists>.Create(album => album
+            .Identity(value => value.Id)
+            .Collection<Artist?>("ArtistId", value => value.Artists, addNullChildren)));
+
+        var album = Assert.Single(await _adapter.QueryAsync(connection, query, default));
+
+        if (addNullChildren)
+        {
+            Assert.Null(Assert.Single(album.Artists));
+        }
+        else
+        {
+            Assert.Empty(album.Artists);
+        }
+    }
+
+    [Fact]
+    public async Task QueryAsync_ForwardsCancellationToTheMultiMappingCommand()
+    {
+        using var connection = new TableConnection(CreateArtistTable());
+        using var cancellation = new CancellationTokenSource();
+
+        var results = await _adapter.QueryAsync(connection, AlbumWithArtistsQuery(), cancellation.Token);
+
+        Assert.Single(results);
+        Assert.Equal(cancellation.Token, connection.LastCancellationToken);
+    }
+
+    [Fact]
+    public async Task QueryAsync_PropagatesMultiMappingCommandCancellation()
+    {
+        using var connection = new TableConnection(CreateArtistTable());
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            _adapter.QueryAsync(connection, AlbumWithArtistsQuery(), cancellation.Token));
+    }
+
     [Fact]
     public async Task QueryAsync_PreservesRowsAndIgnoresIdentityWithoutRelationships()
     {
@@ -167,6 +216,12 @@ public class DapperIdentityExecutionTests
     }
 
     public sealed record Artist(int ArtistId, string Name);
+
+    public sealed class AlbumWithOptionalArtists
+    {
+        public int Id { get; set; }
+        public ICollection<Artist?> Artists { get; } = new List<Artist?>();
+    }
     public readonly record struct Number(int Id);
 
     public record struct NumberWithArtist
@@ -177,6 +232,7 @@ public class DapperIdentityExecutionTests
 
     private sealed class TableConnection(DataTable table) : DbConnection
     {
+        public CancellationToken LastCancellationToken { get; set; }
         [AllowNull]
         public override string ConnectionString { get; set; } = "identity-tests";
         public override string Database => "identity-tests";
@@ -190,7 +246,7 @@ public class DapperIdentityExecutionTests
         protected override DbCommand CreateDbCommand() => new TableCommand(this, table);
     }
 
-    private sealed class TableCommand(DbConnection connection, DataTable table) : DbCommand
+    private sealed class TableCommand(TableConnection connection, DataTable table) : DbCommand
     {
         [AllowNull]
         public override string CommandText { get; set; } = "";
@@ -207,6 +263,13 @@ public class DapperIdentityExecutionTests
         public override object? ExecuteScalar() => throw new NotSupportedException();
         protected override DbParameter CreateDbParameter() => throw new NotSupportedException();
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior) => table.CreateDataReader();
+
+        protected override Task<DbDataReader> ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+        {
+            connection.LastCancellationToken = cancellationToken;
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult<DbDataReader>(table.CreateDataReader());
+        }
     }
 
     private sealed class EmptyParameters : DbParameterCollection

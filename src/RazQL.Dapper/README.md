@@ -14,7 +14,14 @@ services.AddRazQL(builder => builder
 
 The application must also register a provider-specific `DbDataSource`.
 
-## Object Identity
+## Association Mapping
+
+The adapter interprets the relationship tree declared in `ResultMap(...)` and maps contiguous
+column groups through Dapper. `Association` sets a single child property; `Collection` adds
+canonical child objects to an existing collection. Nested relationships are traversed depth-first.
+The [main README](../../README.md#association-mapping) includes matching DTOs and SQL.
+
+### Object Identity
 
 Result maps can define an identity selector on the root or a nested builder:
 
@@ -46,5 +53,38 @@ use their DTO equality and hash code, which must also remain stable. Null object
 and remain distinct from non-null objects whose
 selected key is null. Duplicate selector registrations for the same type are rejected.
 
+### Column Groups and Missing Children
+
 Column names passed to `Association` and `Collection` identify Dapper's column split boundaries;
 they do not define object identity. Selected column groups follow the result map in depth-first order.
+Each group must contain the columns needed to construct its mapped object. For an optional child,
+put a nullable joined key first so Dapper can recognize an absent object.
+
+Missing children become null associations and are omitted from collections by default. The
+`addNullChildren: true` overload permits one null entry for an owner when a missing child is
+encountered repeatedly. Collection properties must be initialized by the DTO. A read-only property
+returning a mutable `ICollection<T>` is sufficient; association properties require a setter.
+
+### Execution and Compatibility
+
+Dapper buffers the physical rows while the mapper assembles the graph. Callback results use an
+explicit marker so a skipped duplicate root cannot be confused with a legitimate null or default
+value. The adapter filters the buffered entries without maintaining a second result list.
+`QuerySingleOrDefaultAsync` checks root cardinality after graph assembly, allowing multiple joined
+rows for one root and throwing if more than one root is returned.
+
+The adapter calls Dapper's private arbitrary-type `MultiMapAsync` through a cached delegate.
+Dapper 2.1.86 exposes a public `Type[]` overload accepting SQL but not a `CommandDefinition`;
+the bridge preserves cancellation and the other command options. Dapper upgrades must preserve
+that private signature and should be validated with the adapter and integration tests.
+
+### Current Limitations
+
+Relationship tracking currently distinguishes owner-child pairs, but does not distinguish two
+relationship properties on the same owner. Mapping the same child to both `PrimaryArtist` and
+`SecondaryArtist` on one owner is not yet supported. Sharing an artist between an album property
+and a song collection works because the owners differ.
+
+Collection factories and configurable one-to-one conflict policies are not implemented. Initialize
+collections yourself, and make joined rows agree on a single-object association's identity. These
+constraints are separate from query-wide object identity.
