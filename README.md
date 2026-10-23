@@ -125,8 +125,18 @@ The column groups follow the relationship tree in depth-first order: album, song
 song artist, then primary artist. The string passed to `Collection` or `Association`
 identifies the first column in a child group for Dapper's `splitOn`; it does not define identity.
 For optional joined objects, that first column must be null when the object is absent.
-Missing children are omitted from collections by default. Collections must be initialized
-by the DTO, and single-object association properties need setters.
+Missing children are omitted from collections by default. Collections can be initialized
+by the DTO or an optional factory on the result map:
+
+```csharp
+ResultMap(album => album.Collection<Song>("id", value => value.Songs,
+    collectionFactory: () => new List<Song>()));
+```
+
+The factory runs only when the property is null and assigns its result to that property,
+which needs a setter in this case. It also initializes an empty collection when no child
+is present. A null collection without a factory throws an exception identifying the property.
+Initialized collections may use getter-only properties; single-object associations need setters.
 
 Register `Identity` once per mapped type anywhere in the tree. The provider is shared by
 every occurrence of that type in the query. An artist referenced by `PrimaryArtist` and a

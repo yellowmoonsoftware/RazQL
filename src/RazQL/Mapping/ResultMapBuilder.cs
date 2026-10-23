@@ -46,14 +46,15 @@ public record AssociationRelation(
     }
 }
 
-/// <summary>Adds mapped children to an existing collection property.</summary>
+/// <summary>Adds mapped children to a collection property, creating the collection when needed.</summary>
 /// <param name="Column">The child's first column, used as a split boundary.</param>
 /// <param name="AddNullChildren">Whether a missing child may be added as null.</param>
 /// <param name="OwningType">The type containing the collection property.</param>
 /// <param name="ChildType">The collection element type.</param>
-/// <param name="PropertyInfo">The collection property, which the DTO must initialize.</param>
+/// <param name="PropertyInfo">The collection property, initialized by the DTO or the factory.</param>
 /// <param name="MethodInfo">The collection's add method.</param>
 /// <param name="ChildRelations">The child's nested relationships.</param>
+/// <param name="CollectionFactory">Creates a collection to assign when the property is null, or null to require an existing collection.</param>
 public record CollectionRelation(
     string Column,
     bool AddNullChildren,
@@ -61,23 +62,47 @@ public record CollectionRelation(
     Type ChildType,
     PropertyInfo PropertyInfo,
     MethodInfo MethodInfo,
-    IReadOnlyList<Relation> ChildRelations)
+    IReadOnlyList<Relation> ChildRelations,
+    Func<object>? CollectionFactory = null)
     : Relation(Column, OwningType, ChildType, PropertyInfo, ChildRelations)
 {
     /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">The collection is null without a factory, or the factory cannot initialize the property with a compatible non-null collection.</exception>
     public override bool ApplyRelation(object owner, object? target)
     {
+        var collection = PropertyInfo.GetValue(owner);
+        if (collection == null)
+        {
+            var propertyName = $"{OwningType.FullName}.{PropertyInfo.Name}";
+            if (CollectionFactory == null)
+            {
+                throw new InvalidOperationException(
+                    $"Collection property '{propertyName}' is null. Initialize it or register a collection factory.");
+            }
+
+            if (PropertyInfo.SetMethod == null)
+            {
+                throw new InvalidOperationException(
+                    $"Collection property '{propertyName}' is null and has no setter to assign the factory-created collection.");
+            }
+
+            collection = CollectionFactory();
+            if (collection == null || !PropertyInfo.PropertyType.IsInstanceOfType(collection))
+            {
+                throw new InvalidOperationException(
+                    $"The collection factory for '{propertyName}' must return a non-null collection assignable to '{PropertyInfo.PropertyType}'.");
+            }
+
+            PropertyInfo.SetValue(owner, collection);
+        }
+
         if (target == null && !AddNullChildren)
         {
             // Ensures we don't get called again for a null child
             return true;
         }
 
-        var collection = PropertyInfo.GetValue(owner);
-        if (collection != null)
-        {
-            MethodInfo.Invoke(collection, [target]);
-        }
+        MethodInfo.Invoke(collection, [target]);
         // If the target was non-null, don't call again for this specific object,
         // or (target was null and) we want to add null children)
         return target != null || AddNullChildren;
@@ -156,7 +181,8 @@ public class ResultMapBuilder<TResult> : IResultMapBuilder<TResult>
     }
 
     /// <inheritdoc />
-    public IResultMapBuilder<TResult> Collection<TEntity>(string column, Expression<Func<TResult, ICollection<TEntity>>> collectionSelector, bool addNullChildren, Action<IResultMapBuilder<TEntity>>? buildMap = null) where TEntity : class?
+    public IResultMapBuilder<TResult> Collection<TEntity>(string column, Expression<Func<TResult, ICollection<TEntity>?>> collectionSelector, bool addNullChildren,
+        Action<IResultMapBuilder<TEntity>>? buildMap = null, Func<ICollection<TEntity>>? collectionFactory = null) where TEntity : class?
     {
         // build any relationships on target 
         var entityMapBuilder = new ResultMapBuilder<TEntity>(_identitySelectors);
@@ -164,7 +190,8 @@ public class ResultMapBuilder<TResult> : IResultMapBuilder<TResult>
         var entityResultMap = entityMapBuilder.Build();
 
         var (propertyInfo, methodInfo) = collectionSelector.GetPropertyAddMethod();
-        var relation = new CollectionRelation(column, addNullChildren, typeof(TResult), typeof(TEntity), propertyInfo, methodInfo, entityResultMap.Relations);
+        var relation = new CollectionRelation(column, addNullChildren, typeof(TResult), typeof(TEntity), propertyInfo, methodInfo,
+            entityResultMap.Relations, collectionFactory == null ? null : () => collectionFactory());
         _relations.Add(relation);
 
         return this;
