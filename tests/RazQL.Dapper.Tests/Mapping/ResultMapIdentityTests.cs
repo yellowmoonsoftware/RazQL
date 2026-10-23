@@ -8,6 +8,125 @@ namespace RazQL.Dapper.Tests.Mapping;
 public class ResultMapIdentityTests
 {
     [Fact]
+    public void ApplyResultRow_AssignsTheSameChildToTwoAssociationsOnOneOwner()
+    {
+        var map = ResultMap<Album>.Create(album => album
+            .Identity(value => value.Id)
+            .Association<Artist?>("PrimaryArtistId", value => value.PrimaryArtist, artist => artist
+                .Identity(value => value!.Id))
+            .Association<Artist?>("SecondaryArtistId", value => value.SecondaryArtist));
+        var mapper = map.ToCorrelatedSequentialResultMap().CreateResultMapper<Album>();
+        var artist = new Artist { Id = 10 };
+
+        var (album, _) = mapper.ApplyResultRow([new Album { Id = 1 }, artist, new Artist { Id = 10 }]);
+        mapper.ApplyResultRow([new Album { Id = 1 }, new Artist { Id = 10 }, new Artist { Id = 10 }]);
+
+        Assert.Same(artist, album.PrimaryArtist);
+        Assert.Same(artist, album.SecondaryArtist);
+    }
+
+    [Fact]
+    public void ApplyResultRow_AddsTheSameChildOncePerCollectionAndOwner()
+    {
+        var map = ResultMap<Album>.Create(album => album
+            .Identity(value => value.Id)
+            .Collection<Artist>("ArtistId", value => value.Artists, artist => artist
+                .Identity(value => value.Id))
+            .Collection<Artist>("GuestArtistId", value => value.GuestArtists));
+        var mapper = map.ToCorrelatedSequentialResultMap().CreateResultMapper<Album>();
+        var artist = new Artist { Id = 10 };
+
+        var (first, _) = mapper.ApplyResultRow([new Album { Id = 1 }, artist, new Artist { Id = 10 }]);
+        mapper.ApplyResultRow([new Album { Id = 1 }, new Artist { Id = 10 }, new Artist { Id = 10 }]);
+        var (second, _) = mapper.ApplyResultRow([new Album { Id = 2 }, new Artist { Id = 10 }, new Artist { Id = 10 }]);
+
+        Assert.Same(artist, Assert.Single(first.Artists));
+        Assert.Same(artist, Assert.Single(first.GuestArtists));
+        Assert.Same(artist, Assert.Single(second.Artists));
+        Assert.Same(artist, Assert.Single(second.GuestArtists));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ApplyResultRow_SharesAChildBetweenAnAssociationAndCollection(bool collectionFirst)
+    {
+        var map = ResultMap<Album>.Create(album =>
+        {
+            album.Identity(value => value.Id);
+            if (collectionFirst)
+            {
+                album.Collection<Artist>("ArtistId", value => value.Artists);
+            }
+
+            album.Association<Artist?>("PrimaryArtistId", value => value.PrimaryArtist, artist => artist
+                .Identity(value => value!.Id));
+            if (!collectionFirst)
+            {
+                album.Collection<Artist>("ArtistId", value => value.Artists);
+            }
+        });
+        var mapper = map.ToCorrelatedSequentialResultMap().CreateResultMapper<Album>();
+        var artist = new Artist { Id = 10 };
+
+        var (album, _) = mapper.ApplyResultRow([new Album { Id = 1 }, artist, new Artist { Id = 10 }]);
+        mapper.ApplyResultRow([new Album { Id = 1 }, new Artist { Id = 10 }, new Artist { Id = 10 }]);
+
+        Assert.Same(artist, album.PrimaryArtist);
+        Assert.Same(artist, Assert.Single(album.Artists));
+    }
+
+    [Fact]
+    public void ApplyResultRow_DeduplicatesTheSameOwnerPropertyReachedThroughDifferentPaths()
+    {
+        var map = ResultMap<Album>.Create(album => album
+            .Identity(value => value.Id)
+            .Association<Song?>("FeaturedSongId", value => value.FeaturedSong, song => song
+                .Identity(value => value!.Id)
+                .Collection<Artist>("ArtistId", value => value!.Artists, artist => artist
+                    .Identity(value => value.Id)))
+            .Collection<Song>("SongId", value => value.Songs, song => song
+                .Collection<Artist>("ArtistId", value => value.Artists)));
+        var mapper = map.ToCorrelatedSequentialResultMap().CreateResultMapper<Album>();
+        var artist = new Artist { Id = 10 };
+
+        var (album, _) = mapper.ApplyResultRow(
+            [new Album { Id = 1 }, new Song { Id = 100 }, artist, new Song { Id = 100 }, new Artist { Id = 10 }]);
+        mapper.ApplyResultRow(
+            [new Album { Id = 1 }, new Song { Id = 100 }, new Artist { Id = 10 }, new Song { Id = 100 }, new Artist { Id = 10 }]);
+
+        var song = Assert.Single(album.Songs);
+        Assert.Same(song, album.FeaturedSong);
+        Assert.Same(artist, Assert.Single(song.Artists));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ApplyResultRow_TracksMissingChildrenSeparatelyForEachCollection(bool addNullChildren)
+    {
+        var map = ResultMap<OptionalArtists>.Create(album => album
+            .Identity(value => value.Id)
+            .Collection<Artist?>("ArtistId", value => value.Artists, addNullChildren)
+            .Collection<Artist?>("GuestArtistId", value => value.GuestArtists, addNullChildren));
+        var mapper = map.ToCorrelatedSequentialResultMap().CreateResultMapper<OptionalArtists>();
+
+        var (album, _) = mapper.ApplyResultRow([new OptionalArtists { Id = 1 }, null!, null!]);
+        mapper.ApplyResultRow([new OptionalArtists { Id = 1 }, null!, null!]);
+
+        if (addNullChildren)
+        {
+            Assert.Null(Assert.Single(album.Artists));
+            Assert.Null(Assert.Single(album.GuestArtists));
+        }
+        else
+        {
+            Assert.Empty(album.Artists);
+            Assert.Empty(album.GuestArtists);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_RegistersTupleIdentityFromARazorTemplate()
     {
         var engine = new RazorEngine();
@@ -201,7 +320,18 @@ public class ResultMapIdentityTests
     {
         public int Id { get; init; }
         public Artist? PrimaryArtist { get; set; }
+        public Artist? SecondaryArtist { get; set; }
+        public Song? FeaturedSong { get; set; }
+        public ICollection<Artist> Artists { get; } = new List<Artist>();
+        public ICollection<Artist> GuestArtists { get; } = new List<Artist>();
         public ICollection<Song> Songs { get; } = new List<Song>();
+    }
+
+    public sealed class OptionalArtists
+    {
+        public int Id { get; init; }
+        public ICollection<Artist?> Artists { get; } = new List<Artist?>();
+        public ICollection<Artist?> GuestArtists { get; } = new List<Artist?>();
     }
 
     public sealed record AlbumRecord(int Id)

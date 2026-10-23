@@ -1,3 +1,6 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
 namespace RazQL.Dapper.Mapping;
 
 /// <summary>Resolves one canonical object per mapped type and identity within a query execution.</summary>
@@ -53,17 +56,32 @@ internal class ObjectCache(IReadOnlyDictionary<Type, Func<object, object?>> iden
         public override int GetHashCode() => HashCode.Combine(ObjectType, Identity);
     }
 
-    /// <summary>Wraps a canonical object and its applied-owner tracking, including for null objects.</summary>
+    /// <summary>Identifies a relationship property on a canonical owner by stable wrapper reference.</summary>
+    /// <param name="Owner">The canonical owner wrapper.</param>
+    /// <param name="Property">The property receiving the child or containing its collection.</param>
+    public readonly record struct AssociationOwner(CacheValue Owner, PropertyInfo Property)
+    {
+        /// <summary>Compares owner references and relationship properties, independent of DTO equality.</summary>
+        /// <param name="other">The relationship context to compare.</param>
+        /// <returns>Whether both contexts identify the same property on the same canonical owner.</returns>
+        public bool Equals(AssociationOwner other) =>
+            ReferenceEquals(Owner, other.Owner) && Equals(Property, other.Property);
+
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine(RuntimeHelpers.GetHashCode(Owner), Property);
+    }
+
+    /// <summary>Wraps a canonical object and its applied-relationship tracking, including for null objects.</summary>
     /// <param name="Value">The canonical object.</param>
     /// <param name="ObjectType">The mapped object type.</param>
-    /// <param name="AssocOwners">Canonical owner wrappers compared by reference.</param>
-    public record CacheValue(object? Value, Type ObjectType, HashSet<CacheValue> AssocOwners)
+    /// <param name="AssocOwners">Owner-property contexts to which this child has already been applied.</param>
+    public record CacheValue(object? Value, Type ObjectType, HashSet<AssociationOwner> AssocOwners)
     {
         /// <summary>Wraps the key's real object with independent owner tracking.</summary>
         /// <param name="key">The key for a newly encountered identity.</param>
         /// <returns>The canonical wrapper to store in the cache.</returns>
         public static CacheValue ForKey(CacheKey key) =>
-            new(key.Value, key.ObjectType, new(ReferenceEqualityComparer.Instance));
+            new(key.Value, key.ObjectType, new());
     }
 
     private readonly Dictionary<CacheKey, CacheValue> _cache = new();

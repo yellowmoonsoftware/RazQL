@@ -6,6 +6,7 @@ public sealed class ArtistGraph
     public string Name { get; set; } = "";
     public ICollection<ArtistCredit> Credits { get; } = new List<ArtistCredit>();
     public Artist? PrimaryArtist { get; set; }
+    public Artist? SecondaryArtist { get; set; }
 }
 
 public sealed class ArtistCredit

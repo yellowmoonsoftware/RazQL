@@ -18,15 +18,16 @@ public class CachedQueryResultMapper<TResult>(CorrelatedSequentialResultMap resu
         {
             var (resolvedTarget, _) = _cache.Get(objects[objectIndex], relation.ChildType);
             var (resolvedOwner, _) = _cache.Get(objects[parentObjectIndex], relation.OwningType);
+            var associationOwner = new ObjectCache.AssociationOwner(resolvedOwner, relation.PropertyInfo);
 
-            if (resolvedOwner.Value == null || resolvedTarget.AssocOwners.Contains(resolvedOwner))
+            if (resolvedOwner.Value == null || resolvedTarget.AssocOwners.Contains(associationOwner))
             {
                 continue;
             }
 
             if (relation.ApplyRelation(resolvedOwner.Value, resolvedTarget.Value))
             {
-                resolvedTarget.AssocOwners.Add(resolvedOwner);
+                resolvedTarget.AssocOwners.Add(associationOwner);
             }
         }
 

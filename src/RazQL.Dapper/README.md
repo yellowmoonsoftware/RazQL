@@ -78,12 +78,15 @@ Dapper 2.1.86 exposes a public `Type[]` overload accepting SQL but not a `Comman
 the bridge preserves cancellation and the other command options. Dapper upgrades must preserve
 that private signature and should be validated with the adapter and integration tests.
 
-### Current Limitations
+### Relationship Context
 
-Relationship tracking currently distinguishes owner-child pairs, but does not distinguish two
-relationship properties on the same owner. Mapping the same child to both `PrimaryArtist` and
-`SecondaryArtist` on one owner is not yet supported. Sharing an artist between an album property
-and a song collection works because the owners differ.
+Relationship tracking distinguishes the canonical owner, the mapped property, and the canonical
+child. The same artist can populate both `PrimaryArtist` and `SecondaryArtist` on one owner or
+appear once in each of two collections. Repeated rows, including different mapping paths reaching
+the same owner and collection property, do not add the same child again. Missing children follow
+the same per-property tracking rules.
+
+### Current Limitations
 
 Collection factories and configurable one-to-one conflict policies are not implemented. Initialize
 collections yourself, and make joined rows agree on a single-object association's identity. These
