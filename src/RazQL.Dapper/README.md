@@ -98,13 +98,25 @@ that private signature and should be validated with the adapter and integration 
 
 ### Relationship Context
 
-Relationship tracking distinguishes the canonical owner, the mapped property, and the canonical
-child. The same artist can populate both `PrimaryArtist` and `SecondaryArtist` on one owner or
-appear once in each of two collections. Repeated rows, including different mapping paths reaching
-the same owner and collection property, do not add the same child again. Missing children follow
-the same per-property tracking rules.
+Collection deduplication distinguishes the canonical owner, the mapped property, and the canonical
+child. An artist can appear once in each of two collections. Repeated rows, including different
+mapping paths reaching the same owner and collection property, do not add the same child again.
+Missing collection children follow the same per-property tracking rules.
 
-### Current Limitations
+Single-object associations use **last assignment wins**. Every mapped occurrence assigns its
+canonical child, including null, without recording assignment history or checking for conflicts.
+For example, `A`, `B`, `A` leaves `A`; `A`, null leaves null; and null, `A`, null leaves null.
+DTO constructor or property-initializer values are overwritten by the first mapped assignment.
+The same canonical artist can still populate both `PrimaryArtist` and `SecondaryArtist` on one owner.
 
-Configurable one-to-one conflict policies are not implemented. Make joined rows agree on a
-single-object association's identity. This constraint is separate from query-wide object identity.
+Queries should normally agree on one association identity for each owner and property. If values
+conflict, the last assignment follows result-row order and, within a row, depth-first result-map
+order. Specify SQL ordering when relying on row order. This property-assignment policy is separate
+from object identity: the first object encountered for an identity still supplies its scalar values.
+
+### Mapping Scope and Cost
+
+RazQL does not provide configurable association conflict policies or ORM-style change tracking.
+Graph mapping buffers joined rows and retains canonical objects and collection-membership entries
+for the execution. Large joins that multiply rows can consume substantial memory. Flat queries
+avoid graph assembly and its tracking overhead.

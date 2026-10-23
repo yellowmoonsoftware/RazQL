@@ -71,10 +71,10 @@ internal class ObjectCache(IReadOnlyDictionary<Type, Func<object, object?>> iden
         public override int GetHashCode() => HashCode.Combine(RuntimeHelpers.GetHashCode(Owner), Property);
     }
 
-    /// <summary>Wraps a canonical object and its applied-relationship tracking, including for null objects.</summary>
+    /// <summary>Wraps a canonical object and its collection-membership tracking, including for null objects.</summary>
     /// <param name="Value">The canonical object.</param>
     /// <param name="ObjectType">The mapped object type.</param>
-    /// <param name="AssocOwners">Owner-property contexts to which this child has already been applied.</param>
+    /// <param name="AssocOwners">Owner-property contexts whose collections have already handled this child.</param>
     public record CacheValue(object? Value, Type ObjectType, HashSet<AssociationOwner> AssocOwners)
     {
         /// <summary>Wraps the key's real object with independent owner tracking.</summary>

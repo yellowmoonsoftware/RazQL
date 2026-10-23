@@ -151,7 +151,12 @@ the number of joined rows. Queries without relationships use ordinary Dapper exe
 do not deduplicate rows merely because an identity was configured. Object caches belong to
 one execution, so subsequent queries create independent objects.
 
-See the [Dapper mapping details and current limitations](src/RazQL.Dapper/README.md#association-mapping).
+Single-object associations use **last assignment wins**, including nulls and children encountered
+earlier in the result. Collections deduplicate children per owner and property. RazQL does not
+track association conflicts; queries should normally return a consistent association for each owner.
+When values differ, the result depends on the order in which rows and mapped relationships are processed.
+
+See the [Dapper mapping details](src/RazQL.Dapper/README.md#association-mapping).
 
 ## Template Sources
 

@@ -24,6 +24,7 @@ public interface IResultMapBuilder<TResult>
     /// <param name="associationSelector">Selects the child property on the current object.</param>
     /// <param name="buildMap">An optional callback configuring the child's identity and relationships.</param>
     /// <returns>This builder.</returns>
+    /// <remarks>Every mapped value is assigned, including null. The last assignment wins; association conflicts are not tracked.</remarks>
     public IResultMapBuilder<TResult> Association<TEntity>(string column,
         Expression<Func<TResult, TEntity>> associationSelector, Action<IResultMapBuilder<TEntity>>? buildMap = null) where TEntity : class?;
 

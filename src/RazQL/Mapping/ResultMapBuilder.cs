@@ -20,11 +20,11 @@ public abstract record Relation(
     /// <summary>Assigns or adds a child to an owning object.</summary>
     /// <param name="owner">The canonical owning object.</param>
     /// <param name="target">The canonical child, or null for a missing child.</param>
-    /// <returns>Whether this owner-child application may be recorded as handled.</returns>
+    /// <returns>Whether subsequent applications of this child to the same owner and property may be skipped.</returns>
     public abstract bool ApplyRelation(object owner, object? target);
 };
 
-/// <summary>Assigns a mapped child to a single-object property.</summary>
+/// <summary>Assigns each mapped child to a single-object property; the last assignment wins, including null.</summary>
 /// <param name="Column">The child's first column, used as a split boundary.</param>
 /// <param name="OwningType">The type containing the relationship property.</param>
 /// <param name="ChildType">The child object type.</param>
@@ -39,10 +39,11 @@ public record AssociationRelation(
     : Relation(Column, OwningType, ChildType, PropertyInfo, ChildRelations)
 {
     /// <inheritdoc />
+    /// <returns>Always false so later assignments, including previously seen children and nulls, are never skipped.</returns>
     public override bool ApplyRelation(object owner, object? target)
     {
         PropertyInfo.SetValue(owner, target);
-        return true;
+        return false;
     }
 }
 

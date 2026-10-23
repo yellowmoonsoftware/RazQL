@@ -12,9 +12,9 @@ public class ResultMapBuilderTests
         var owner = new Owner();
         var child = new Child();
 
-        Assert.True(relation.ApplyRelation(owner, child));
+        Assert.False(relation.ApplyRelation(owner, child));
         Assert.Same(child, owner.Child);
-        Assert.True(relation.ApplyRelation(owner, null));
+        Assert.False(relation.ApplyRelation(owner, null));
         Assert.Null(owner.Child);
     }
 
